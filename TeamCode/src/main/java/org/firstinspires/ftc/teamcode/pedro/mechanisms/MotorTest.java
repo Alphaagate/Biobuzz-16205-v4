@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.pedro.mechanisms;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import android.util.Config;
+
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -36,6 +38,8 @@ public class MotorTest extends LinearOpMode {
 
     private IMU imu;
 
+//    private CRServo sidespinner;
+
     @Override
     public void runOpMode() {
 
@@ -53,6 +57,8 @@ public class MotorTest extends LinearOpMode {
         //outtake2 = hardwareMap.get(DcMotorEx.class, "out2");
         //turret = hardwareMap.get(DcMotorEx.class, "outA");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
+//        sidespinner = hardwareMap.get(CRServo.class, "sidespinner");
+
 
         imu = hardwareMap.get(IMU.class, "imu");
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
@@ -128,13 +134,14 @@ public class MotorTest extends LinearOpMode {
             //turret.setPower(0.7);
 
             if (currentGamepad1.left_trigger_pressed) {
-                intake.setPower(-1);
+                intake.setPower(-1) ;
             }
             else {
                 intake.setPower(0);
             }
             if (currentGamepad1.left_bumper) {
                 intake.setPower(1);
+//                sidespinner.setPower(1);
             }
             else {
                 intake.setPower(0);
