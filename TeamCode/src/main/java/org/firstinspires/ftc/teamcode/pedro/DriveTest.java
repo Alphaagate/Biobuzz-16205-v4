@@ -166,14 +166,9 @@ public class DriveTest extends LinearOpMode {
 
             Scheduler.execute();
 
-            double velocity = outtake.getVelocity();
-            double error = vel - velocity;
 
-            double feedback = error * 0.005;
-            double feedforward = 0.00036 * vel + 0.08;
 
-            outtake.setPower(feedback + feedforward);
-            outtake2.setPower(feedback + feedforward);
+
 
             LLResult result = limelight.getLatestResult();
 

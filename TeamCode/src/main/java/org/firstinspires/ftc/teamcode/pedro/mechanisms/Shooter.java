@@ -23,19 +23,19 @@ public class Shooter {
 
     private boolean activated = true;
 
-    public static double near = 1200;
-    public static double far = 1400;
+    public static final double NEAR = 1200;
+    public static final double FAR = 1400;
 
-    private static final double[] xs = {44, 72, 100};
-    private static final double[] ys = {10, 38, 66};
-    private static final double[][] closeVelocities = {
+    private static final double[] XS = {44, 72, 100};
+    private static final double[] YS = {10, 38, 66};
+    private static final double[][] CLOSE_VELOCITIES = {
             {1200, 1200, 1275},
             {1275, 1275, 1350},
             {1325, 1360, 1400}
     };
     public Shooter(HardwareMap hardwareMap) {
-        left = hardwareMap.get(DcMotorEx.class, "sl");
-        right = hardwareMap.get(DcMotorEx.class, "sr");
+        left = hardwareMap.get(DcMotorEx.class, "shooterleft");
+        right = hardwareMap.get(DcMotorEx.class, "shooterright");
         left.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
@@ -74,12 +74,12 @@ public class Shooter {
 
 
     public void shootNear() {
-        setTarget(near);
+        setTarget(NEAR);
         on();
     }
 
     public CommandBuilder shoot() {
-        return Commands.instant(this::shoot);
+        return Commands.instant(this::shootNear);
     }
 
 

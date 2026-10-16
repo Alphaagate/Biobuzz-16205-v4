@@ -38,7 +38,7 @@ public class MotorTest extends LinearOpMode {
 
     private IMU imu;
 
-//    private CRServo sidespinner;
+    private CRServo sidespinner;
 
     @Override
     public void runOpMode() {
@@ -53,11 +53,11 @@ public class MotorTest extends LinearOpMode {
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "bL");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "bR");
 
-        outtake1 = hardwareMap.get(DcMotorEx.class, "out1");
+//        outtake1 = hardwareMap.get(DcMotorEx.class, "out1");
         //outtake2 = hardwareMap.get(DcMotorEx.class, "out2");
         //turret = hardwareMap.get(DcMotorEx.class, "outA");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
-//        sidespinner = hardwareMap.get(CRServo.class, "sidespinner");
+        sidespinner = hardwareMap.get(CRServo.class, "sidespinner");
 
 
         imu = hardwareMap.get(IMU.class, "imu");
@@ -135,22 +135,26 @@ public class MotorTest extends LinearOpMode {
 
             if (currentGamepad1.left_trigger_pressed) {
                 intake.setPower(-1) ;
+                sidespinner.setPower(-1);
+
             }
             else {
                 intake.setPower(0);
+                sidespinner.setPower(0);
+
             }
             if (currentGamepad1.left_bumper) {
                 intake.setPower(1);
-//                sidespinner.setPower(1);
             }
             else {
                 intake.setPower(0);
+
             }
             if (currentGamepad1.right_trigger_pressed) {
-                outtake1.setPower(-1);
+                //outtake1.setPower(-1);
             }
             else {
-                outtake1.setPower(0);
+                //outtake1.setPower(0);
             }
 
 

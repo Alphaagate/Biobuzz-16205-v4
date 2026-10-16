@@ -8,10 +8,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 public class Intake {
     private final DcMotorEx intake;
-    public static double off = 0;
-    public static double idle = 0.5;
-    public static double intakePower = 1;
-    public static double spitoutPower = -1;
+    public static final double OFF = 0;
+    public static final double IDLE = 0.5;
+    public static final double INTAKE_POWER = 1;
+    public static final double SPITOUT_POWER = -1;
 
 
     public Intake(HardwareMap hardwareMap) {
@@ -24,19 +24,19 @@ public class Intake {
     }
 
     public void spinIdle() {
-        set(idle);
+        set(IDLE);
     }
 
     public CommandBuilder off() {
-        return Commands.instant(() -> set(off));
+        return Commands.instant(() -> set(OFF));
     }
 
     public CommandBuilder intake() {
-        return Commands.instant(() -> set(intakePower));
+        return Commands.instant(() -> set(INTAKE_POWER));
     }
 
     public CommandBuilder spitout() {
-        return Commands.instant(() -> set(spitoutPower));
+        return Commands.instant(() -> set(SPITOUT_POWER));
     }
 
     public CommandBuilder idle() {
