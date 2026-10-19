@@ -21,8 +21,8 @@ import org.firstinspires.ftc.teamcode.pedro.mechanisms.Shooter;
 
 public class Robot {
     public final Intake intake;
-    public final Shooter shooter;
-    public final Gate gate;
+//    public final Shooter shooter;
+//    public final Gate gate;
     public final Follower follower;
     public Alliance alliance;
 
@@ -34,8 +34,8 @@ public class Robot {
     public Robot(HardwareMap hardwareMap) {
 
 //        l = new Limelight(h, a);
-        shooter = new Shooter(hardwareMap);
-        gate = new Gate(hardwareMap);
+//        shooter = new Shooter(hardwareMap);
+//        gate = new Gate(hardwareMap);
         follower = Constants.create(hardwareMap);
         intake = new Intake(hardwareMap);
 
@@ -65,14 +65,14 @@ public class Robot {
 
     public CommandBuilder shoot() {
         return sequential(
-                gate.down(),
+//                gate.down(),
                 intake.intake(),
-                Commands.waitUntil(shooter::atTarget),
+//                Commands.waitUntil(shooter::atTarget),
                 intake.intake(),
-                gate.up(),
-                shooter.shoot(),
+//                gate.up(),
+//                shooter.shoot(),
                 Commands.waitMs(400.0),
-                gate.down(),
+//                gate.down(),
                 intake.off()
         );
     }
@@ -80,13 +80,13 @@ public class Robot {
 
     public CommandBuilder intake() {
         return sequential(
-                gate.down(),
+//                gate.down(),
                 intake.intake()
         );
     }
     public CommandBuilder stopIntake() {
         return sequential(
-                gate.down(),
+//                gate.down(),
                 intake.off()
         );
     }

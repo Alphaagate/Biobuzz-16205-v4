@@ -25,8 +25,8 @@ public class ServoTurret {
     public static double TURRET_OFFSET_FROM_ROBOT_CENTER = 1.0;
 
     public static final double SERVO_DEGREES = 355.0;
-    public static final double SERVO_MIN = 0.01;
-    public static final double SERVO_MAX = 0.99;
+    public static final double SERVO_MIN = 0.015;
+    public static final double SERVO_MAX = 0.95;
     public static final double DEFAULT_POSITION = 0.5;
 
     // Fine-tune alignment without touching the math (configurable via dashboard)
