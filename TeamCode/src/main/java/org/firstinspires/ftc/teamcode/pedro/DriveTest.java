@@ -43,16 +43,16 @@ public class DriveTest extends LinearOpMode {
     private final PoseFactory poseFactory = PoseFactory.degrees();
     //    private final PoseFactory p = PoseFactory.degrees().mirrorX(70.75);
 //TODO: red and blue side switch, test which one is for red side and determine if you want to use control pad or make a separate opmode
-    private final Pose startPose = poseFactory.of(48, 9, 90);
-    private final Pose pickupCornerStartPose = poseFactory.of(48, 9, 180);
+    private final Pose pickupCornerStartPose = poseFactory.of(39, 9, 180);
     private final Pose pickupCornerPose = poseFactory.of(9, 9, 180);
-    private final Pose shootFarPose = poseFactory.of(48, 130, 90);
-    private final Pose shootFarControl1Pose = poseFactory.of(29.2032, 103.8799, 0);
-    private final Pose intakeFlowerPose = poseFactory.of(10.0495, 46.5635, 180);
+    private final Pose shootFarPose = poseFactory.of(48.3591, 120, 90);
+    private final Pose shootFarControl1Pose = poseFactory.of(26.2906, 101.0069, 0);
+    private final Pose point3Pose = poseFactory.of(48.4023, 128.4746, 90);
+    private final Pose intakeFlowerPose = poseFactory.of(12.9226, 46.9226, 180);
     private final Pose intakeFlowerControl1Pose = poseFactory.of(14, 98, 0);
     private final Pose intakeFlowerControl2Pose = poseFactory.of(50, 36, 0);
     private final Pose shootFlowerPose = poseFactory.of(48, 8, 90);
-    private final Pose pickupLimelightPose = poseFactory.of(59.8554, 51.0381, 74.5991);
+    private final Pose pickupLimelightPose = poseFactory.of(59.8554, 51.0381, 90);
     private final Pose shootLimelightPose = poseFactory.of(48.3992, 8.9979, 90);
     private final Pose parkPose = poseFactory.of(9.0867, 101.5183, 90);
 
@@ -84,6 +84,7 @@ public class DriveTest extends LinearOpMode {
     protected Path shootPreloads;
     protected Path pickupCorner;
     protected Path shootFar;
+    protected Path path3;
     protected Path intakeFlower;
     protected Path shootFlower;
     protected Path pickupLimelight;
@@ -100,14 +101,21 @@ public class DriveTest extends LinearOpMode {
 
 //        shootPreloads = line(startPose, pickupCornerStartPose)
 //                .linear(startPose, pickupCornerStartPose);
-        pickupCorner = line(pickupCornerStartPose, pickupCornerPose).linear(pickupCornerStartPose, pickupCornerPose);
-//                .with(Constants.foresightConfig.maxPathSpeed.at(0.45));
-        shootFar = curve(pickupCornerPose, shootFarControl1Pose, shootFarPose).linear(pickupCornerPose, shootFarPose);
-        intakeFlower = curve(shootFarPose, intakeFlowerControl1Pose, intakeFlowerControl2Pose, intakeFlowerPose).linear(shootFarPose, intakeFlowerPose);
-        shootFlower = line(intakeFlowerPose, shootFlowerPose).linear(intakeFlowerPose, shootFlowerPose);
-        pickupLimelight = line(shootFlowerPose, pickupLimelightPose).tangent();
-        shootLimelight = line(pickupLimelightPose, shootLimelightPose).constant(shootLimelightPose);
-        park = line(shootLimelightPose, parkPose).linear(shootLimelightPose, parkPose);
+        pickupCorner = line(pickupCornerStartPose, pickupCornerPose).linear(pickupCornerStartPose, pickupCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+
+        shootFar = curve(pickupCornerPose, shootFarControl1Pose, shootFarPose).linear(pickupCornerPose, shootFarPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+
+        path3 = line(shootFarPose, point3Pose).constant(point3Pose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+
+        intakeFlower = curve(point3Pose, intakeFlowerControl1Pose, intakeFlowerControl2Pose, intakeFlowerPose).linear(point3Pose, intakeFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+
+        shootFlower = line(intakeFlowerPose, shootFlowerPose).linear(intakeFlowerPose, shootFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+
+        pickupLimelight = line(shootFlowerPose, pickupLimelightPose).constant(pickupLimelightPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+
+        shootLimelight =line(pickupLimelightPose, shootLimelightPose).constant(shootLimelightPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+
+        park = line(shootLimelightPose, parkPose).linear(shootLimelightPose, parkPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
 
     }
