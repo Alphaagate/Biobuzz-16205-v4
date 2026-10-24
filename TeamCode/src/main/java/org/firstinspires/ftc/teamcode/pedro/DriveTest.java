@@ -17,12 +17,20 @@ import com.pedropathing.math.Pose;
 import com.pedropathing.api.PoseFactory;
 import com.pedropathing.ivy.Command;
 
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+
+import java.util.List;
+
+import static com.pedropathing.ivy.commands.Commands.lazy;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import static com.pedropathing.ivy.commands.Commands.waitUntil;
 @Autonomous
 
 public class DriveTest extends LinearOpMode {
@@ -35,12 +43,14 @@ public class DriveTest extends LinearOpMode {
     private final PoseFactory poseFactory = PoseFactory.degrees();
     //    private final PoseFactory p = PoseFactory.degrees().mirrorX(70.75);
 //TODO: red and blue side switch, test which one is for red side and determine if you want to use control pad or make a separate opmode
-    private final Pose startPose = poseFactory.of(48, 8, 180);
-    private final Pose pickupCornerStartPose = poseFactory.of(48, 8, 180);
-    private final Pose pickupCornerPose = poseFactory.of(8, 8, 180);
-    private final Pose shootFarPose = poseFactory.of(47.6008, 129.3427, 90);
-    private final Pose shootFarControl1Pose = poseFactory.of(37.3307, 103.2638, 0);
-    private final Pose intakeFlowerPose = poseFactory.of(12, 48, 180);
+    private final Pose startPose = poseFactory.of(48, 9, 90);
+    private final Pose pickupCornerStartPose = poseFactory.of(48, 9, 180);
+    private final Pose pickupCornerPose = poseFactory.of(9, 9, 180);
+    private final Pose shootFarPose = poseFactory.of(48, 130, 90);
+    private final Pose shootFarControl1Pose = poseFactory.of(29.2032, 103.8799, 0);
+    private final Pose intakeFlowerPose = poseFactory.of(10.0495, 46.5635, 180);
+    private final Pose intakeFlowerControl1Pose = poseFactory.of(14, 98, 0);
+    private final Pose intakeFlowerControl2Pose = poseFactory.of(50, 36, 0);
     private final Pose shootFlowerPose = poseFactory.of(48, 8, 90);
     private final Pose pickupLimelightPose = poseFactory.of(59.8554, 51.0381, 74.5991);
     private final Pose shootLimelightPose = poseFactory.of(48.3992, 8.9979, 90);
@@ -49,9 +59,26 @@ public class DriveTest extends LinearOpMode {
 
 
 
+
 //    private Follower robot.follower;
     private Limelight3A limelight;
+    // Limelight ball tracking settings
+    private static final double TURN_KP = 0.035;
+    private static final double MAX_TURN = 0.45;
 
+    private static final double MAX_FORWARD = 0.35;
+    private static final double TX_DEADBAND = 1.5;
+
+    private static final double STOP_AREA = 1.0;
+    private static final double AREA_KP = 0.40;
+
+    // Stop trying after this many seconds.
+    private static final double VISION_TIMEOUT_SECONDS = 3.5;
+
+    private final ElapsedTime visionTimer = new ElapsedTime();
+
+    private boolean visionFoundCloseBall = false;
+    private double visionArea = 0.0;
     public double vel;
     protected Path start;
     protected Path shootPreloads;
@@ -73,21 +100,15 @@ public class DriveTest extends LinearOpMode {
 
 //        shootPreloads = line(startPose, pickupCornerStartPose)
 //                .linear(startPose, pickupCornerStartPose);
-        pickupCorner = line(pickupCornerStartPose, pickupCornerPose)
-                .linear(pickupCornerStartPose, pickupCornerPose)
-                .with(Constants.foresightConfig.maxPathSpeed.at(0.5));
-        shootFar = curve(pickupCornerPose, shootFarControl1Pose, shootFarPose)
-                .linear(pickupCornerPose, shootFarPose);
-        intakeFlower = line(shootFarPose, intakeFlowerPose)
-                .linear(shootFarPose, intakeFlowerPose);
-        shootFlower = line(shootFarPose, shootFlowerPose)
-                .linear(shootFarPose, shootFlowerPose);
-        pickupLimelight = line(shootFlowerPose, pickupLimelightPose)
-                .tangent();
-        shootLimelight = line(pickupLimelightPose, shootLimelightPose)
-                .constant(shootLimelightPose);
-        park = line(shootLimelightPose, parkPose)
-                .linear(shootLimelightPose, parkPose);
+        pickupCorner = line(pickupCornerStartPose, pickupCornerPose).linear(pickupCornerStartPose, pickupCornerPose);
+//                .with(Constants.foresightConfig.maxPathSpeed.at(0.45));
+        shootFar = curve(pickupCornerPose, shootFarControl1Pose, shootFarPose).linear(pickupCornerPose, shootFarPose);
+        intakeFlower = curve(shootFarPose, intakeFlowerControl1Pose, intakeFlowerControl2Pose, intakeFlowerPose).linear(shootFarPose, intakeFlowerPose);
+        shootFlower = line(intakeFlowerPose, shootFlowerPose).linear(intakeFlowerPose, shootFlowerPose);
+        pickupLimelight = line(shootFlowerPose, pickupLimelightPose).tangent();
+        shootLimelight = line(pickupLimelightPose, shootLimelightPose).constant(shootLimelightPose);
+        park = line(shootLimelightPose, parkPose).linear(shootLimelightPose, parkPose);
+
 
     }
 //    Command autoStart = Command.build()
@@ -110,14 +131,44 @@ public class DriveTest extends LinearOpMode {
 //            })
 //            .requiring(/* requirements */);
 
+    private Command followWithActionAtDistance(
+            Path path,
+            double distanceInches,
+            Command action
+    ) {
+        // Make sure the path is long enough.
+        if (distanceInches < 0 || distanceInches >= path.curve.length()) {
+            throw new IllegalArgumentException(
+                    "Trigger distance must be non-negative and less than path length."
+            );
+        }
 
+        return parallel(
+                // Follow the path normally.
+                follow(robot.follower, path),
+
+                // Wait until the specified distance has been traveled.
+                sequential(
+                        waitUntil(() ->
+                                robot.follower.following()
+                                        && robot.follower.currentCurve() != null
+                                        && robot.follower.currentCurve().length()
+                                        - robot.follower.remainingDistance()
+                                        >= distanceInches
+                        ),
+
+                        // Execute the action at the distance marker.
+                        action
+                )
+        );
+    }
 
     @Override
     public void runOpMode() {
         robot = new Robot(hardwareMap);
         Scheduler.reset();
 
-        robot.follower.setPose(startPose);
+        robot.follower.setPose(pickupCornerStartPose);
 
 //        limelight = hardwareMap.get(
 //                Limelight3A.class,
@@ -139,12 +190,25 @@ public class DriveTest extends LinearOpMode {
 
                 parallel(
                         follow(robot.follower, pickupCorner),
+                        //.with(Constants.foresightConfig.maxPathSpeed.at(0.5))
                         robot.intake()
                 ),
 
-                robot.stopIntake(),
+                //rampdown
+//                followWithActionAtDistance(
+//                        shootFar,
+//                        20,
+//                        //rampdown
+//
+//                        robot.shoot()
+//                ),
+
 
                 follow(robot.follower, shootFar),
+                //robot.shoot
+                robot.stopIntake(),
+
+
 
                 parallel(
                         follow(robot.follower, intakeFlower),
@@ -152,9 +216,10 @@ public class DriveTest extends LinearOpMode {
                 ),
 
                 robot.stopIntake(),
+                //rampup
 
                 follow(robot.follower, shootFlower),
-
+//                robot.shoot(),
                 parallel(
                         follow(robot.follower, pickupLimelight),
                         robot.intake()
@@ -163,6 +228,7 @@ public class DriveTest extends LinearOpMode {
                 robot.stopIntake(),
 
                 follow(robot.follower, shootLimelight),
+//                robot.shoot(),
 
                 follow(robot.follower, park)
         );
