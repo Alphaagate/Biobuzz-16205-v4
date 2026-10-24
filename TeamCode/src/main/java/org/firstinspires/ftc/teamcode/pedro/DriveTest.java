@@ -101,43 +101,24 @@ public class DriveTest extends LinearOpMode {
 
 //        shootPreloads = line(startPose, pickupCornerStartPose)
 //                .linear(startPose, pickupCornerStartPose);
-        pickupCorner = line(pickupCornerStartPose, pickupCornerPose).linear(pickupCornerStartPose, pickupCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        pickupCorner = line(pickupCornerStartPose, pickupCornerPose).linear(pickupCornerStartPose, pickupCornerPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        shootFar = curve(pickupCornerPose, shootFarControl1Pose, shootFarPose).linear(pickupCornerPose, shootFarPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootFar = curve(pickupCornerPose, shootFarControl1Pose, shootFarPose).linear(pickupCornerPose, shootFarPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        path3 = line(shootFarPose, point3Pose).constant(point3Pose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        path3 = line(shootFarPose, point3Pose).constant(point3Pose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        intakeFlower = curve(point3Pose, intakeFlowerControl1Pose, intakeFlowerControl2Pose, intakeFlowerPose).linear(point3Pose, intakeFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        intakeFlower = curve(point3Pose, intakeFlowerControl1Pose, intakeFlowerControl2Pose, intakeFlowerPose).linear(point3Pose, intakeFlowerPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        shootFlower = line(intakeFlowerPose, shootFlowerPose).linear(intakeFlowerPose, shootFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootFlower = line(intakeFlowerPose, shootFlowerPose).linear(intakeFlowerPose, shootFlowerPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        pickupLimelight = line(shootFlowerPose, pickupLimelightPose).constant(pickupLimelightPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        pickupLimelight = line(shootFlowerPose, pickupLimelightPose).constant(pickupLimelightPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        shootLimelight =line(pickupLimelightPose, shootLimelightPose).constant(shootLimelightPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootLimelight =line(pickupLimelightPose, shootLimelightPose).constant(shootLimelightPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        park = line(shootLimelightPose, parkPose).linear(shootLimelightPose, parkPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        park = line(shootLimelightPose, parkPose).linear(shootLimelightPose, parkPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
 
     }
-//    Command autoStart = Command.build()
-//            .setStart(() -> {
-//                //turret
-//                robot.shoot();
-//            })
-//            .setExecute(() -> {
-//
-//                robot.follower.follow(shootPreloads);
-//
-//
-//            })
-//            .setDone(() -> {
-//                // return true to end the command
-//                return true;
-//            })
-//            .setEnd(endCondition -> {
-//                // executed on end
-//            })
-//            .requiring(/* requirements */);
 
     private Command followWithActionAtDistance(
             Path path,
