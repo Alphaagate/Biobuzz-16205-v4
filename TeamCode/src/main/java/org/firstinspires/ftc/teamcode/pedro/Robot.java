@@ -35,6 +35,8 @@ public class Robot {
 
 //        l = new Limelight(h, a);
 //        shooter = new Shooter(hardwareMap);
+//        turret.init(hardwareMap);   // ServoTurret uses init(), not a constructor
+
 //        gate = new Gate(hardwareMap);
         follower = Constants.create(hardwareMap);
         intake = new Intake(hardwareMap);
