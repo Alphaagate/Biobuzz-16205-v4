@@ -12,7 +12,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 
 
-@TeleOp(name = "TeleOpBiobuzz")
+@TeleOp(name = "Austin teleop")
 public class TeleOp16205Drivecode extends LinearOpMode {
 
     public double target = 0;
