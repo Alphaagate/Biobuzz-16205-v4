@@ -28,8 +28,8 @@ public class TeleOp16205Drivecode extends LinearOpMode {
     double lastp2 = 0;
     int turretRotation = 0;
 
-    private DcMotorEx intake, frontLeftDrive, frontRightDrive, backLeftDrive, backRightDrive, outtake1;
-    private CRServo sidewheel;
+    private DcMotorEx intake, frontLeftDrive, frontRightDrive, backLeftDrive, backRightDrive; //outtake1;
+//    private CRServo sidewheel;
     private IMU imu;
 
     @Override
@@ -45,11 +45,11 @@ public class TeleOp16205Drivecode extends LinearOpMode {
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "bL");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "bR");
 
-        outtake1 = hardwareMap.get(DcMotorEx.class, "out1");
+        //outtake1 = hardwareMap.get(DcMotorEx.class, "out1");
         //outtake2 = hardwareMap.get(DcMotorEx.class, "out2");
         //turret = hardwareMap.get(DcMotorEx.class, "outA");
-        intake = hardwareMap.get(DcMotorEx.class, "intake");
-        sidewheel = hardwareMap.get(CRServo.class, "sidewheel");
+        //intake = hardwareMap.get(DcMotorEx.class, "//intake");
+//        sidewheel = hardwareMap.get(CRServo.class, "outsidewheel");
         imu = hardwareMap.get(IMU.class, "imu");
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
@@ -90,7 +90,7 @@ public class TeleOp16205Drivecode extends LinearOpMode {
             }
             else if (currentGamepad2.dpad_right) {
                 target = (2798 * -0.222);
-                intake.setPower(-0.6);
+                //intake.setPower(-0.6);
             }
             else if (currentGamepad2.dpad_left) {
                 target = (2798 * 0.486);
@@ -100,13 +100,13 @@ public class TeleOp16205Drivecode extends LinearOpMode {
                 target = (2798 * 0.4);
 
             } else  if (currentGamepad1.right_bumper) {
-                //intake.setPower(-1);
+                ////intake.setPower(-1);
                 target = (2798 * -0.2);
             }
 
             else {
                 target = (0.0);
-                intake.setPower(0);
+                //intake.setPower(0);
             }
             //launcherpid(target);
 
@@ -124,25 +124,25 @@ public class TeleOp16205Drivecode extends LinearOpMode {
             //turret.setPower(0.7);
 
             if (currentGamepad1.left_trigger_pressed) {
-                intake.setPower(-1);
+                //intake.setPower(-1);
             }
             else {
-                intake.setPower(0);
+                //intake.setPower(0);
             }
             if (currentGamepad1.left_bumper) {
-                intake.setPower(1);
+                //intake.setPower(1);
             }
             else {
-                intake.setPower(0);
+                //intake.setPower(0);
             }
             if (currentGamepad1.right_trigger_pressed) {
-                outtake1.setPower(-1);
+                //outtake1.setPower(-1);
             }
             else {
-                outtake1.setPower(0);
+                //outtake1.setPower(0);
             }
             if (currentGamepad1.y) {
-                sidewheel.setPower(1.0);
+//                sidewheel.setPower(1.0);
             }
 
 
@@ -161,7 +161,7 @@ public class TeleOp16205Drivecode extends LinearOpMode {
         }
     }
     // public void launcherpid(double target) {
-    //     double p1 = target - outtake1.getVelocity();
+    //     double p1 = target - //outtake1.getVelocity();
     //     double p2 = target - outtake2.getVelocity();
 
     //     double d1 = p1 - lastp1;
@@ -176,11 +176,11 @@ public class TeleOp16205Drivecode extends LinearOpMode {
 
     //     telemetry.addData("kd", kd);
     //     telemetry.addData("motorpower", motorPower);
-    //     telemetry.addData("vel1", outtake1.getVelocity());
+    //     telemetry.addData("vel1", //outtake1.getVelocity());
     //     telemetry.addData("vel2", outtake2.getVelocity());
 
     //     telemetry.update();
-    //     outtake1.setPower(motorPower);
+    //     //outtake1.setPower(motorPower);
     //     outtake2.setPower(motorPower);
     //     lastp1 = p1;
     //     lastp2 = p2;
