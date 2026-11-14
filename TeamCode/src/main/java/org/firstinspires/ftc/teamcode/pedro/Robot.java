@@ -19,6 +19,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.Alliance;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.Gate;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.Intake;
+import org.firstinspires.ftc.teamcode.pedro.mechanisms.MovingShotCalculator;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.Ramp;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.ServoTurret;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.Shooter;
@@ -30,6 +31,7 @@ public class Robot {
     public final Shooter shooter;
     public final Ramp ramp;
     public final ServoTurret turret;
+    public final MovingShotCalculator movingShot;
 //    public final Gate gate;
     public final Follower follower;
     public Alliance alliance;
@@ -45,8 +47,8 @@ public class Robot {
         shooter = new Shooter(hardwareMap);
         turret = new ServoTurret();
         turret.init(hardwareMap);   // ServoTurret uses init(), not a constructor
-
         ramp = new Ramp(hardwareMap);
+        movingShot = new MovingShotCalculator(shooter, turret, ramp);
         follower = Constants.create(hardwareMap);
         intake = new Intake(hardwareMap);
 
@@ -63,23 +65,23 @@ public class Robot {
     }
 
 
-//    public void setShootTarget() {
-//        if (alliance == Alliance.BLUE && shootTarget.getX() != 6)
-//            shootTarget = new Pose(6, 144 - 6, 0);
-//        else if (alliance == Alliance.RED && shootTarget.getX() != (144 - 6))
-//            shootTarget = shootTarget.mirror();
-//    }
-
     public Pose getShootTarget() {
         return shootTarget;
     }
 
     public CommandBuilder shoot() {
         return sequential(
+                Commands.instant(shooter::on), // targets are updated continuously by MovingShotCalculator
                 shooter.waitReady(),          // wait until stable at target
                 intake.intake(),              // feed balls
                 Commands.waitMs(400.0),
                 intake.off()
+        );
+    }
+
+    public CommandBuilder shootOff() {
+        return sequential(
+                Commands.instant(shooter::off) // targets are updated continuously by MovingShotCalculator
         );
     }
 
@@ -105,6 +107,12 @@ public class Robot {
 
     public Command aimTurret(Follower follower) {
         return infinite(() -> turret.update(follower));
+    }
+
+    /** Updates the compensated turret target and flywheel target, then runs the shooter PIDF. */
+    public void updateMovingShot() {
+        movingShot.update(follower);
+        shooter.periodic();
     }
     public CommandBuilder stopIntake() {
         return sequential(

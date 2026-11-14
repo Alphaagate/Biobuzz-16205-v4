@@ -26,8 +26,16 @@ public class Shooter {
     public static double TOLERANCE = 50;       // ticks/s
     public static double STABLE_SECONDS = 0.15;
 
+    // Empirical static-shot curve retained from the team's prior calibrated shooter code.
+    // Refit these three values whenever the flywheel, hood, or ball changes.
+    public static double STATIC_TICKS_QUADRATIC = 0.00180088;
+    public static double STATIC_TICKS_LINEAR = 4.14265;
+    public static double STATIC_TICKS_CONSTANT = 948.97358;
+
     private double target = 0;
-    private boolean activated = true;
+    // A moving-shot calculation may update the target every loop, but it must never spin the
+    // flywheels by itself. shoot()/spinUp()/on() are still the explicit enable actions.
+    private boolean activated = false;
 
     private double integral = 0, lastError = 0, lastTime = 0;
     private double inTolSince = -1;
@@ -99,6 +107,12 @@ public class Shooter {
     public void off() { activated = false; target = 0; setPower(0); }
 
     public void shootNear() { setTarget(NEAR); on(); }
+
+    /** Returns the measured stationary flywheel target for an inches-to-goal distance. */
+    public static double ticksForStaticDistance(double distanceInches) {
+        return STATIC_TICKS_QUADRATIC * distanceInches * distanceInches
+                + STATIC_TICKS_LINEAR * distanceInches + STATIC_TICKS_CONSTANT;
+    }
 
     // ---------- Ivy commands ----------
     public CommandBuilder shoot()     { return Commands.instant(this::shootNear); }

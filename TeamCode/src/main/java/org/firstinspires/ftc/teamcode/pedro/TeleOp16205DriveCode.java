@@ -27,9 +27,6 @@ public class TeleOp16205DriveCode extends OpMode {
     public void loop() {
 
 
-        // Continuously aim turret
-        robot.turret.update(robot.follower);
-
         DrivePowers powers = ManualDrive.fieldCentric(
                 -gamepad1.left_stick_y,
                 gamepad1.left_stick_x,
@@ -45,10 +42,15 @@ public class TeleOp16205DriveCode extends OpMode {
         }
 
         robot.follower.update();
+        robot.updateMovingShot();
         Pose robotPose = robot.follower.pose(); // returns a Pose object
         telemetry.addData("Robot X", robotPose.x());
         telemetry.addData("Robot Y", robotPose.y());
         telemetry.addData("Robot Heading", Math.toDegrees(robotPose.heading()));
+        telemetry.addData("Shot target", robot.shooter.getTarget());
+        telemetry.addData("Shot speed", robot.movingShot.getSolution().compensatedLaunchSpeed);
+        telemetry.addData("Hood angle", Math.toDegrees(robot.movingShot.getSolution().hoodAngle));
+        telemetry.addData("Shot valid", robot.movingShot.getSolution().valid);
         // Math.toDegrees() is a built-in java method
     }
 }

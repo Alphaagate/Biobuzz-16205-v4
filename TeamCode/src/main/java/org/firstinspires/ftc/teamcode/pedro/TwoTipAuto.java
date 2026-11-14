@@ -27,6 +27,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import static com.pedropathing.ivy.commands.Commands.waitUntil;
 
+import org.firstinspires.ftc.teamcode.pedro.mechanisms.MovingShotCalculator;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.ServoTurret;
 
 @Autonomous
@@ -175,6 +176,7 @@ public class TwoTipAuto extends LinearOpMode {
                         robot.stopIntake(),
                         robot.rampdown()
                 ),
+
                 parallel(
                         follow(robot.follower, intakeFlower),
                         robot.intake()
@@ -204,27 +206,31 @@ public class TwoTipAuto extends LinearOpMode {
         while (opModeIsActive()) {
 
             robot.follower.update();
-            robot.shooter.periodic();                // REQUIRED every loop
 
+            if (robot.follower.pose().y() >= 70.0) {
+                ServoTurret.GOAL_X = 60.0;
+                ServoTurret.GOAL_Y = 80.0;
+                MovingShotCalculator.TARGET_HEIGHT_IN = 59.5;
+            } else {
+                ServoTurret.GOAL_X = 60.0;
+                ServoTurret.GOAL_Y = 60.0;
+                MovingShotCalculator.TARGET_HEIGHT_IN = 59.5;
+            }
 
-            // Continuously aim turret
-            robot.turret.update(robot.follower);
+            robot.updateMovingShot();
+            robot.updateMovingShot();
 
             // Run your Ivy scheduler
             Scheduler.execute();
-            Scheduler.execute();
-
-            if (robot.follower.pose().y() >= 70) {
-                ServoTurret.GOAL_Y = 80.0;
-            }
-            else {
-                ServoTurret.GOAL_Y = 60.0;
-            }
+//            Scheduler.execute();
 
 //            LLResult result = limelight.getLatestResult();
             telemetry.addData("Shooter target", robot.shooter.getTarget());
             telemetry.addData("Shooter vel", robot.shooter.getVelocity());
             telemetry.addData("At target", robot.shooter.atTarget());
+            telemetry.addData("Shot valid", robot.movingShot.getSolution().valid);
+            telemetry.addData("Flight time", robot.movingShot.getSolution().flightTime);
+            telemetry.addData("Hood angle", Math.toDegrees(robot.movingShot.getSolution().hoodAngle));
             telemetry.update();
             telemetry.addData(
                     "Follower Busy",
@@ -266,7 +272,8 @@ public class TwoTipAuto extends LinearOpMode {
 
             telemetry.update();
         }
-        robot.shooter.off();
+        robot.shootOff();
+        robot.stopIntake();
     }
 
 

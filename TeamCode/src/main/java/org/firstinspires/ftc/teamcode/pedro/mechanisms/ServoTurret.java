@@ -73,28 +73,31 @@ public class ServoTurret {
     // ========================================================================
 
     public void update(Follower follower) {
-        currentRobotPose = follower.pose();
-        aimTurret(currentRobotPose);
+        aimAtFieldPoint(follower.pose(), GOAL_X, GOAL_Y);
     }
 
-    private void aimTurret(Pose robotPose) {
-        if (robotPose.y() >= 70) {
-            GOAL_X = 60.0;
-            GOAL_Y = 80.0;
-        } else {
-            GOAL_X = 60.0;
-            GOAL_Y = 60.0;
-        }
-        double turretX = robotPose.x() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.cos(robotPose.heading());
-        double turretY = robotPose.y() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.sin(robotPose.heading());
+    /**
+     * Aims at a stationary field point. MovingShotCalculator calls aimAtFieldAngle() instead
+     * so that the same servo calibration is used for velocity-compensated shots.
+     */
+    public void aimAtFieldPoint(Pose robotPose, double goalX, double goalY) {
+        double turretX = getTurretX(robotPose);
+        double turretY = getTurretY(robotPose);
 
-        double deltaX = GOAL_X - turretX;
-        double deltaY = GOAL_Y - turretY;
+        double deltaX = goalX - turretX;
+        double deltaY = goalY - turretY;
 
-        distanceToGoal = Math.hypot(deltaX, deltaY);
+        aimAtFieldAngle(robotPose, Math.atan2(deltaY, deltaX), Math.hypot(deltaX, deltaY));
+    }
 
-        double angleToGoal = Math.atan2(deltaY, deltaX);
-        double relativeAngle = normalizeAngle(angleToGoal - robotPose.heading());
+    /**
+     * Aims at an absolute, field-frame bearing. This is intentionally separate from the
+     * point-based helper so a moving shot can lead the target without changing servo math.
+     */
+    public void aimAtFieldAngle(Pose robotPose, double fieldAngle, double distance) {
+        currentRobotPose = robotPose;
+        distanceToGoal = distance;
+        double relativeAngle = normalizeAngle(fieldAngle - robotPose.heading());
 
         // Apply heading offset in angle space before converting to servo position
         relativeAngle = normalizeAngle(relativeAngle + HEADING_OFFSET);
@@ -107,6 +110,16 @@ public class ServoTurret {
 
         targetServoPosition = servoPosition;
         setPosition(servoPosition);
+    }
+
+    /** Returns the turret pivot's field X coordinate using the existing robot offset convention. */
+    public double getTurretX(Pose robotPose) {
+        return robotPose.x() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.cos(robotPose.heading());
+    }
+
+    /** Returns the turret pivot's field Y coordinate using the existing robot offset convention. */
+    public double getTurretY(Pose robotPose) {
+        return robotPose.y() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.sin(robotPose.heading());
     }
 
     // ========================================================================
