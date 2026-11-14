@@ -90,6 +90,7 @@ public class MotorTest extends LinearOpMode {
             currentGamepad1.copy(gamepad1);
             currentGamepad2.copy(gamepad2);
 
+
             if (currentGamepad1.options) {
                 imu.resetYaw();
             }

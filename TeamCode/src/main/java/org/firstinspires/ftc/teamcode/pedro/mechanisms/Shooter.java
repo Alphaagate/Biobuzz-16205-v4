@@ -5,112 +5,111 @@ import com.pedropathing.ivy.commands.Commands;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
-
-import static com.pedropathing.ivy.Scheduler.schedule;
-
-import static com.pedropathing.api.Paths.line;
-import static com.pedropathing.api.Paths.curve;
-import static com.pedropathing.api.Paths.path;
-
-
 public class Shooter {
-    private DcMotorEx left, right;
+    private final DcMotorEx left, right;
+    private final VoltageSensor battery;
+
+    // ---- Tunables (public static so FTC Dashboard can edit them) ----
+    public static double kS = 0.08;        // power to just barely move
+    public static double kV = 0.00039;     // power per (tick/s)
+    public static double kP = 0.01;
+    public static double kI = 0.0;         // start at 0
+    public static double kD = 0.0;         // usually leave 0 for flywheels
+    public static double I_MAX = 0.15;     // max power the I term may contribute
+    public static double NOMINAL_VOLTS = 12.0;
+
+    public static double TICKS_PER_REV = 28;   // CHECK YOUR MOTOR
+    public static double NEAR = 1500;          // ticks/s (see note above)
+    public static double TOLERANCE = 50;       // ticks/s
+    public static double STABLE_SECONDS = 0.15;
 
     private double target = 0;
-    public static double kS = 0.08, kV = 0.00039, kP = 0.01;
-
     private boolean activated = true;
 
-    public static final double NEAR = 1200;
-    public static final double FAR = 1400;
+    private double integral = 0, lastError = 0, lastTime = 0;
+    private double inTolSince = -1;
+    private double velocity = 0;               // cached once per loop
 
-    private static final double[] XS = {44, 72, 100};
-    private static final double[] YS = {10, 38, 66};
-    private static final double[][] CLOSE_VELOCITIES = {
-            {1200, 1200, 1275},
-            {1275, 1275, 1350},
-            {1325, 1360, 1400}
-    };
-    public Shooter(HardwareMap hardwareMap) {
-        left = hardwareMap.get(DcMotorEx.class, "shooterleft");
-        right = hardwareMap.get(DcMotorEx.class, "shooterright");
+    public Shooter(HardwareMap hw) {
+        left = hw.get(DcMotorEx.class, "shooterleft");
+        right = hw.get(DcMotorEx.class, "shooterright");
         left.setDirection(DcMotorSimple.Direction.REVERSE);
+        battery = hw.voltageSensor.iterator().next();
     }
 
-    public double getTarget() {
-        return target;
-    }
+    // ---------- unit helpers ----------
+    public static double rpmToTicks(double rpm) { return rpm * TICKS_PER_REV / 60.0; }
+    public static double ticksToRpm(double t)   { return t * 60.0 / TICKS_PER_REV; }
 
-    public double getVelocity() {
-        return right.getVelocity();
-    }
-
-    public void setPower(double p) {
-        left.setPower(-p);
-        right.setPower(-p);
-    }
-
-    public void off() {
-        activated = false;
-        setPower(0);
-    }
-
-    public void on() {
-        activated = true;
-    }
-
-    public void shooterToggle() {
-        activated = !activated;
-        if (!activated)
-            setPower(0);
-    }
-
-    public CommandBuilder toggle() {
-        return Commands.instant(this::shooterToggle);
-    }
-
-
-
-    public void shootNear() {
-        setTarget(NEAR);
-        on();
-    }
-
-    public CommandBuilder shoot() {
-        return Commands.instant(this::shootNear);
-    }
-
-
-    public void setTarget(double velocity) {
-        target = velocity;
-    }
+    // ---------- control ----------
+    public void setTarget(double ticksPerSec) { target = ticksPerSec; }
+    public void setTargetRpm(double rpm)      { target = rpmToTicks(rpm); }
+    public double getTarget()   { return target; }
+    public double getVelocity() { return velocity; }
+    public double getRpm()      { return ticksToRpm(velocity); }
 
     public void periodic() {
-        if (activated)
-            setPower((kV * getTarget()) + (kP * (getTarget() - getVelocity())) + kS);
+        double now = System.nanoTime() / 1e9;
+        double dt = (lastTime == 0) ? 0.02 : Math.max(now - lastTime, 1e-3);
+        lastTime = now;
+
+        velocity = right.getVelocity();            // ONE hardware read per loop
+
+        if (!activated || target <= 0) {
+            setPower(0);
+            integral = 0; lastError = 0; inTolSince = -1;
+            return;
+        }
+
+        double error = target - velocity;
+
+        // Integral with anti-windup (clamped in power units)
+        integral += error * dt;
+        if (kI != 0) integral = clamp(integral, -I_MAX / kI, I_MAX / kI);
+        double derivative = (error - lastError) / dt;
+        lastError = error;
+
+        double feedforward = kS + kV * target;
+        double feedback = kP * error + kI * integral + kD * derivative;
+
+        // Compensate for battery sag
+        double volts = Math.max(battery.getVoltage(), 8.0);
+        double power = (feedforward + feedback) * (NOMINAL_VOLTS / volts);
+
+        setPower(clamp(power, 0, 1));              // never spin backwards
+
+        // "at speed" must hold for a short time, not just one lucky sample
+        if (Math.abs(error) < TOLERANCE) {
+            if (inTolSince < 0) inTolSince = now;
+        } else {
+            inTolSince = -1;
+        }
     }
 
     public boolean atTarget() {
-        return Math.abs((getTarget()- getVelocity())) < 50;
+        return target > 0 && inTolSince >= 0
+                && (System.nanoTime() / 1e9 - inTolSince) >= STABLE_SECONDS;
     }
 
-    public void forDistance(double distance, boolean close) {
-        //setTarget((6.13992 * distance) + 858.51272);
-        if (close)
-            //setTarget((0.000367066*Math.pow(distance,4))-(0.124995*Math.pow(distance,3))+(15.63311*Math.pow(distance,2))-(847.49369*distance)+18000.2274);
-            setTarget((0.00180088*Math.pow(distance, 2))+(4.14265*distance)+948.97358);
-        else
-            setTarget(1550);
+    public void setPower(double p) { left.setPower(-p); right.setPower(-p); }
+    public void on()  { activated = true; }
+    public void off() { activated = false; target = 0; setPower(0); }
+
+    public void shootNear() { setTarget(NEAR); on(); }
+
+    // ---------- Ivy commands ----------
+    public CommandBuilder shoot()     { return Commands.instant(this::shootNear); }
+    public CommandBuilder spinUp()    { return Commands.instant(this::shootNear); }
+    public CommandBuilder stop()      { return Commands.instant(this::off); }
+    public CommandBuilder waitReady() { return Commands.waitUntil(this::atTarget); }
+
+    private static double clamp(double v, double lo, double hi) {
+        return Math.max(lo, Math.min(hi, v));
     }
 
-    public String getLeftCurrent() {
-        return "Left Shooter Motor: " + left.getCurrent(CurrentUnit.AMPS);
-    }
-
-    public String getRightCurrent() {
-        return "Right Shooter Motor: " + right.getCurrent(CurrentUnit.AMPS);
-    }
-
+    public String getLeftCurrent()  { return "Left: "  + left.getCurrent(CurrentUnit.AMPS); }
+    public String getRightCurrent() { return "Right: " + right.getCurrent(CurrentUnit.AMPS); }
 }

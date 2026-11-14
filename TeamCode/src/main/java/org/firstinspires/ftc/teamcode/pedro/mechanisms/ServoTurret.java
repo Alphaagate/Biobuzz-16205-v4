@@ -78,6 +78,13 @@ public class ServoTurret {
     }
 
     private void aimTurret(Pose robotPose) {
+        if (robotPose.y() >= 70) {
+            GOAL_X = 60.0;
+            GOAL_Y = 80.0;
+        } else {
+            GOAL_X = 60.0;
+            GOAL_Y = 60.0;
+        }
         double turretX = robotPose.x() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.cos(robotPose.heading());
         double turretY = robotPose.y() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.sin(robotPose.heading());
 
