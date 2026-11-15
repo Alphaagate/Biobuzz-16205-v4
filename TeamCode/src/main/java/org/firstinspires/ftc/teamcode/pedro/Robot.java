@@ -23,13 +23,14 @@ import org.firstinspires.ftc.teamcode.pedro.mechanisms.MovingShotCalculator;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.Ramp;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.ServoTurret;
 import org.firstinspires.ftc.teamcode.pedro.mechanisms.Shooter;
-
+import org.firstinspires.ftc.teamcode.pedro.mechanisms.Hood;
 import java.security.AlgorithmParameterGenerator;
 
 public class Robot {
     public final Intake intake;
     public final Shooter shooter;
     public final Ramp ramp;
+    public final Hood hood;
     public final ServoTurret turret;
     public final MovingShotCalculator movingShot;
 //    public final Gate gate;
@@ -39,7 +40,7 @@ public class Robot {
     private final Timer loop = new Timer();
     public double loops = 0, lastLoop = 0, loopTime = 0;
     public static Pose defaultPose = new Pose(8 + 24, 6.25 + 24, 0);
-    public static Pose shootTarget = new Pose(6, 144 - 6, 0);
+    public static Pose shootTarget = new Pose(ServoTurret.GOAL_X, ServoTurret.GOAL_Y, 0);
 
     public Robot(HardwareMap hardwareMap) {
 
@@ -51,7 +52,7 @@ public class Robot {
         movingShot = new MovingShotCalculator(shooter, turret, ramp);
         follower = Constants.create(hardwareMap);
         intake = new Intake(hardwareMap);
-
+        hood = new Hood(hardwareMap);
 
         loop.reset();
 //        setShootTarget();
@@ -110,10 +111,28 @@ public class Robot {
     }
 
     /** Updates the compensated turret target and flywheel target, then runs the shooter PIDF. */
+
+    /**
+     * Updates the moving-shot solution and runs the flywheel controller.
+     * Call this once per OpMode loop, after the follower has updated.
+     */
     public void updateMovingShot() {
+        // Calculates the latest turret and flywheel targets.
         movingShot.update(follower);
+
+        MovingShotCalculator.ShotSolution solution =
+                movingShot.getSolution();
+
+        // Do not keep commanding an old flywheel speed
+        // when the current shot calculation is invalid.
+        if (!solution.valid) {
+            shooter.setTargetRpm(0.0);
+        }
+
+        // Uses the latest target and measured RPM to calculate motor power.
         shooter.periodic();
     }
+
     public CommandBuilder stopIntake() {
         return sequential(
 //                gate.down(),
@@ -121,7 +140,20 @@ public class Robot {
         );
     }
 
+    public double distanceToShootTarget() {
 
+        Pose current = follower.pose();
+        Pose target = getShootTarget();
+
+        return Math.hypot(
+                target.x() - current.x(),
+                target.y() - current.y()
+        );
+    }
+
+    public void updateHoodAim() {
+        hood.aimForDistance(distanceToShootTarget());
+    }
     public double getLoopTimeMs() {
         return loopTime;
     }

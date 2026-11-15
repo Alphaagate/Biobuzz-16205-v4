@@ -187,7 +187,7 @@ public class TwoTipAuto extends LinearOpMode {
                 robot.shoot(),
                 waitMs(500.0),
                 robot.shootOff(),
-                
+
                 parallel(
                         follow(robot.follower, pickupLimelight),
                         robot.intake()
@@ -219,13 +219,22 @@ public class TwoTipAuto extends LinearOpMode {
                 ServoTurret.GOAL_Y = 60.0;
                 MovingShotCalculator.TARGET_HEIGHT_IN = 59.5;
             }
-
-            robot.updateMovingShot();
+            robot.shooter.periodic();
             robot.updateMovingShot();
 
             // Run your Ivy scheduler
             Scheduler.execute();
+            robot.updateHoodAim();
 
+            telemetry.addData(
+                    "Hood Launch Angle",
+                    robot.hood.getCommandedAngle()
+            );
+
+            telemetry.addData(
+                    "Hood Servo Position",
+                    robot.hood.getServoPosition()
+            );
 //            LLResult result = limelight.getLatestResult();
             telemetry.addData("Shooter target", robot.shooter.getTarget());
             telemetry.addData("Shooter vel", robot.shooter.getVelocity());

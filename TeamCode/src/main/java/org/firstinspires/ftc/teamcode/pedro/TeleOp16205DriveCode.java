@@ -36,7 +36,7 @@ public class TeleOp16205DriveCode extends OpMode {
         ManualDrive.driveOrHold(robot.follower, powers);
 
         if (gamepad1.options) {
-            Pose cornerPose = new Pose(10.5, 10.5, Math.toRadians(90));
+            Pose cornerPose = new Pose(9, 9, Math.toRadians(90));
             // On the fly Pose creation, we dont recommend this for Autonomous. Only accepts radians for heading
             robot.follower.setPose(cornerPose); // overrides our pose
         }
