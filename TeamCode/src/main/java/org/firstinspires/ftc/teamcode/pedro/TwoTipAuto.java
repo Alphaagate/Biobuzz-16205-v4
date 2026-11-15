@@ -163,7 +163,7 @@ public class TwoTipAuto extends LinearOpMode {
         auto = sequential(
                 robot.shoot(),
                 waitMs(500.0),
-
+                robot.shootOff(),
                 parallel(
                         follow(robot.follower, pickupCorner),
                         robot.intake()
@@ -171,6 +171,7 @@ public class TwoTipAuto extends LinearOpMode {
                 follow(robot.follower, shootCorner),
                 robot.shoot(),
                 waitMs(500.0),
+                robot.shootOff(),
 
                 parallel(
                         robot.stopIntake(),
@@ -185,7 +186,8 @@ public class TwoTipAuto extends LinearOpMode {
                 follow(robot.follower, shootFar),
                 robot.shoot(),
                 waitMs(500.0),
-
+                robot.shootOff(),
+                
                 parallel(
                         follow(robot.follower, pickupLimelight),
                         robot.intake()
@@ -195,6 +197,7 @@ public class TwoTipAuto extends LinearOpMode {
                 follow(robot.follower, shootLimelight),
                 robot.shoot(),
                 waitMs(500.0),
+                robot.shootOff(),
 
                 follow(robot.follower, park)
         );
@@ -222,7 +225,6 @@ public class TwoTipAuto extends LinearOpMode {
 
             // Run your Ivy scheduler
             Scheduler.execute();
-//            Scheduler.execute();
 
 //            LLResult result = limelight.getLatestResult();
             telemetry.addData("Shooter target", robot.shooter.getTarget());
