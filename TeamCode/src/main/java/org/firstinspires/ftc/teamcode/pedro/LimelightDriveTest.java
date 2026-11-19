@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedro;
 
+import com.pedropathing.api.Paths;
 import com.pedropathing.ivy.Scheduler;
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.commands.Commands.instant;
@@ -19,6 +20,7 @@ import com.pedropathing.math.Pose;
 import com.pedropathing.api.PoseFactory;
 import com.pedropathing.ivy.Command;
 
+import com.pedropathing.paths.interpolator.Interpolator;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -33,6 +35,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import static com.pedropathing.ivy.commands.Commands.waitUntil;
+
+import org.firstinspires.ftc.teamcode.pedro.mechanisms.MovingShotCalculator;
+import org.firstinspires.ftc.teamcode.pedro.mechanisms.ServoTurret;
+
 @Autonomous
 
 public class LimelightDriveTest extends LinearOpMode {
@@ -45,18 +51,23 @@ public class LimelightDriveTest extends LinearOpMode {
     private final PoseFactory poseFactory = PoseFactory.degrees();
     //    private final PoseFactory p = PoseFactory.degrees().mirrorX(70.75);
 //TODO: red and blue side switch, test which one is for red side and determine if you want to use control pad or make a separate opmode
-    private final Pose pickupCornerStartPose = poseFactory.of(39, 9, 180);
+    private final Pose startPose = poseFactory.of(39, 9, 90);
     private final Pose pickupCornerPose = poseFactory.of(9, 9, 180);
-    private final Pose shootFarPose = poseFactory.of(48.3591, 120, 90);
-    private final Pose shootFarControl1Pose = poseFactory.of(26.2906, 101.0069, 0);
-    private final Pose point3Pose = poseFactory.of(48.4023, 128.4746, 90);
-    private final Pose intakeFlowerPose = poseFactory.of(12.9226, 46.9226, 180);
-    private final Pose intakeFlowerControl1Pose = poseFactory.of(14, 98, 0);
-    private final Pose intakeFlowerControl2Pose = poseFactory.of(50, 36, 0);
-    private final Pose shootFlowerPose = poseFactory.of(48, 8, 90);
-    private final Pose pickupLimelightPose = poseFactory.of(59.8554, 51.0381, 90);
-    private final Pose shootLimelightPose = poseFactory.of(48.3992, 8.9979, 90);
-    private final Pose parkPose = poseFactory.of(9.0867, 101.5183, 90);
+    private final Pose shootCornerStartPose = poseFactory.of(9, 9, 180);
+    private final Pose shootCornerPose = poseFactory.of(39, 9, 180);
+    private final Pose intakeFlowerPose = poseFactory.of(12, 48, 180);
+    private final Pose intakeFlowerControl1Pose = poseFactory.of(40.1234, 52.3672, 0);
+    private final Pose shootFarStartPose = poseFactory.of(12, 48, 180);
+    private final Pose shootFarPose = poseFactory.of(48, 129, 90);
+    private final Pose shootFarControl1Pose = poseFactory.of(31.5437, 51.0714, 0);
+    private final Pose shootFarControl2Pose = poseFactory.of(6.6204, 111.3712, 0);
+    private final Pose shootFarControl3Pose = poseFactory.of(50.3263, 95.8882, 0);
+    private final Pose pickupLimelightPose = poseFactory.of(59.2357, 30.8386, -99.0469);
+    private final Pose pickupLimelightControl1Pose = poseFactory.of(67.4289, 82.2959, 0);
+    private final Pose pickupLimelightSegment1HeadingPose = poseFactory.of(59.2357, 30.8386, 90);
+    private final Pose shootLimelightPose = poseFactory.of(48, 129.165, -70.3221);
+    private final Pose shootLimelightControl1Pose = poseFactory.of(65.0249, 81.5582, 0);
+    private final Pose parkPose = poseFactory.of(8.6721, 103.9427, 270);
 
 
 
@@ -75,19 +86,19 @@ public class LimelightDriveTest extends LinearOpMode {
 
     private static final double STOP_AREA = 1.0;      // TUNE THIS
     private static final double AREA_KP = 0.40;
+    private static final double X_LIMIT = 60.0;       // never go past this
+    private static final double X_SLOW_ZONE = 8.0;    // start slowing this far before the limit
+
 
     // Give up and move on after this many seconds.
     private static final double VISION_TIMEOUT_SECONDS = 3.5;
 
     private boolean visionFoundCloseBall = false;
     public double vel;
-    protected Path start;
-    protected Path shootPreloads;
     protected Path pickupCorner;
-    protected Path shootFar;
-    protected Path path3;
+    protected Path shootCorner;
     protected Path intakeFlower;
-    protected Path shootFlower;
+    protected Path shootFar;
     protected Path pickupLimelight;
     protected Path shootLimelight;
     protected Path park;
@@ -100,23 +111,19 @@ public class LimelightDriveTest extends LinearOpMode {
 
     private void generatePaths() {
 
-//        shootPreloads = line(startPose, pickupCornerStartPose)
-//                .linear(startPose, pickupCornerStartPose);
-        pickupCorner = line(pickupCornerStartPose, pickupCornerPose).linear(pickupCornerStartPose, pickupCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        pickupCorner = line(startPose, pickupCornerPose).constant(pickupCornerPose);
 
-        shootFar = curve(pickupCornerPose, shootFarControl1Pose, shootFarPose).linear(pickupCornerPose, shootFarPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootCorner = line(shootCornerStartPose, shootCornerPose).linear(shootCornerStartPose, shootCornerPose);
 
-        path3 = line(shootFarPose, point3Pose).constant(point3Pose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        intakeFlower = Paths.curve(shootCornerPose, intakeFlowerControl1Pose, intakeFlowerPose).constant(intakeFlowerPose);
 
-        intakeFlower = curve(point3Pose, intakeFlowerControl1Pose, intakeFlowerControl2Pose, intakeFlowerPose).linear(point3Pose, intakeFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootFar = curve(shootFarStartPose, shootFarControl1Pose, shootFarControl2Pose, shootFarControl3Pose, shootFarPose).linear(shootFarStartPose, shootFarPose);
 
-        shootFlower = line(intakeFlowerPose, shootFlowerPose).linear(intakeFlowerPose, shootFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        pickupLimelight = curve(shootFarPose, pickupLimelightControl1Pose, pickupLimelightPose).heading(Interpolator.piecewise().until(0.114, Interpolator.constant(pickupLimelightSegment1HeadingPose)).until(1, Interpolator.tangent));
 
-        pickupLimelight = line(shootFlowerPose, pickupLimelightPose).constant(pickupLimelightPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootLimelight = Paths.curve(pickupLimelightPose, shootLimelightControl1Pose, shootLimelightPose).constant(shootLimelightPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        park = line(shootLimelightPose, parkPose).linear(shootLimelightPose, parkPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
-
-
+        park = line(shootLimelightPose, parkPose).constant(parkPose);//.with(Constants.foresightConfig.maxPathSpeed.at(0.5));
     }
     private Path buildShootLimelightPath() {
         Pose current = robot.follower.pose();
@@ -134,7 +141,6 @@ public class LimelightDriveTest extends LinearOpMode {
                     LLResult result = limelight.getLatestResult();
                     LLResultTypes.ColorResult target = null;
 
-                    // Find the largest blob (same as LimelightBallDrive)
                     if (result != null && result.isValid()) {
                         for (LLResultTypes.ColorResult blob : result.getColorResults()) {
                             if (target == null || blob.getTargetArea() > target.getTargetArea()) {
@@ -147,21 +153,38 @@ public class LimelightDriveTest extends LinearOpMode {
                         double tx = target.getTargetXDegrees();
                         double area = target.getTargetArea();
 
-                        // Turn toward ball. Limelight +tx = right, Pedro +turn = CCW, so negate.
                         if (Math.abs(tx) > TX_DEADBAND) {
                             turn = Range.clip(-tx * TURN_KP, -MAX_TURN, MAX_TURN);
                         }
 
-                        // Drive toward ball until it is big enough in the image
                         if (area < STOP_AREA) {
                             forward = Range.clip((STOP_AREA - area) * AREA_KP, MIN_FORWARD, MAX_FORWARD);
                         } else if (Math.abs(tx) <= TX_DEADBAND) {
-                            // Close enough AND lined up -> finished
                             visionFoundCloseBall = true;
                         }
                     }
 
-                    // No target -> forward = 0, turn = 0, robot just waits (timeout will end it)
+                    // ---- X LIMIT ----
+                    double x = robot.follower.pose().x();
+                    double heading = robot.follower.pose().heading();   // radians
+                    double xComponent = Math.cos(heading);              // how much "forward" moves us along +X
+
+                    if (forward != 0) {
+                        double movingTowardLimit = forward * xComponent;   // >0 means increasing X
+
+                        if (movingTowardLimit > 0) {
+                            if (x >= X_LIMIT) {
+                                forward = 0;                 // hard stop
+                                visionFoundCloseBall = true; // end the command so it doesn't sit there
+                            } else if (x > X_LIMIT - X_SLOW_ZONE) {
+                                // taper speed to zero as we approach the limit
+                                double scale = (X_LIMIT - x) / X_SLOW_ZONE;
+                                forward *= Range.clip(scale, 0, 1);
+                            }
+                        }
+                    }
+                    // -----------------
+
                     robot.follower.manual(forward, 0, turn);
                 })
                 .setDone(() -> visionFoundCloseBall)
@@ -204,8 +227,8 @@ public class LimelightDriveTest extends LinearOpMode {
     public void runOpMode() {
         robot = new Robot(hardwareMap);
         Scheduler.reset();
+        robot.follower.setPose(startPose);
 
-        robot.follower.setPose(pickupCornerStartPose);
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.setPollRateHz(100);
@@ -214,55 +237,39 @@ public class LimelightDriveTest extends LinearOpMode {
 
         generatePaths();
         auto = sequential(
-                // robot.shoot(),
-
-//                follow(robot.follower, shootPreloads),
-
+                robot.shoot(),
+                waitMs(500.0),
+                robot.shootOff(),
                 parallel(
                         follow(robot.follower, pickupCorner),
-                        //.with(Constants.foresightConfig.maxPathSpeed.at(0.5))
                         robot.intake()
                 ),
+                follow(robot.follower, shootCorner),
+                robot.shoot(),
+                waitMs(500.0),
+                robot.shootOff(),
 
-                //rampdown
-//                followWithActionAtDistance(
-//                        shootFar,
-//                        20,
-//                        //rampdown
-//
-//                        robot.shoot()
-//                ),
-
-
-                follow(robot.follower, shootFar),
-                //robot.shoot
-                robot.stopIntake(),
-
-
+                parallel(
+                        robot.stopIntake(),
+                        robot.rampdown()
+                ),
 
                 parallel(
                         follow(robot.follower, intakeFlower),
                         robot.intake()
                 ),
 
-                robot.stopIntake(),
-                //rampup
-
-                follow(robot.follower, shootFlower),
-//                robot.shoot(),
+                follow(robot.follower, shootFar),
+                robot.shoot(),
+                waitMs(500.0),
+                robot.shootOff(),
                 parallel(
                         sequential(
                                 follow(robot.follower, pickupLimelight),
-                                race(
-                                        seekBall(),
-                                        waitMs(VISION_TIMEOUT_SECONDS * 1000)   // timeout so the auto never gets stuck
-                                )
+                                race(seekBall(), waitMs(VISION_TIMEOUT_SECONDS * 1000))
                         ),
                         robot.intake()
                 ),
-
-                robot.stopIntake(),
-
                 lazy(() -> follow(robot.follower, buildShootLimelightPath())),
 //                robot.shoot(),
 
@@ -278,14 +285,39 @@ public class LimelightDriveTest extends LinearOpMode {
 
             robot.follower.update();
 
+            if (robot.follower.pose().y() >= 70.0) {
+                ServoTurret.GOAL_X = 60.0;
+                ServoTurret.GOAL_Y = 80.0;
+                MovingShotCalculator.TARGET_HEIGHT_IN = 59.5;
+            } else {
+                ServoTurret.GOAL_X = 60.0;
+                ServoTurret.GOAL_Y = 60.0;
+                MovingShotCalculator.TARGET_HEIGHT_IN = 59.5;
+            }
+            robot.shooter.periodic();
+            robot.updateMovingShot();
+
+            // Run your Ivy scheduler
             Scheduler.execute();
+            robot.updateHoodAim();
 
+            telemetry.addData(
+                    "Hood Launch Angle",
+                    robot.hood.getCommandedAngle()
+            );
 
-
-
-
+            telemetry.addData(
+                    "Hood Servo Position",
+                    robot.hood.getServoPosition()
+            );
 //            LLResult result = limelight.getLatestResult();
-
+            telemetry.addData("Shooter target", robot.shooter.getTarget());
+            telemetry.addData("Shooter vel", robot.shooter.getVelocity());
+            telemetry.addData("At target", robot.shooter.atTarget());
+            telemetry.addData("Shot valid", robot.movingShot.getSolution().valid);
+            telemetry.addData("Flight time", robot.movingShot.getSolution().flightTime);
+            telemetry.addData("Hood angle", Math.toDegrees(robot.movingShot.getSolution().hoodAngle));
+            telemetry.update();
             telemetry.addData(
                     "Follower Busy",
                     robot.follower.isBusy()
@@ -306,7 +338,7 @@ public class LimelightDriveTest extends LinearOpMode {
                     Math.toDegrees(robot.follower.pose().heading())
             );
 
-//             Only added to let you verify that the Limelight is actually returning data.
+            // Only added to let you verify that the Limelight is actually returning data.
 //            if (result != null && result.isValid()) {
 //                telemetry.addData(
 //                        "Limelight",

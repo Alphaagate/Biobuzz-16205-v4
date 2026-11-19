@@ -15,7 +15,7 @@ public class MovingShotCalculator {
     // Field target. These are shared with ServoTurret so there is exactly one X/Y target.
     // Set these to the center of the CELL opening that is currently intended to score.
     public static double TARGET_HEIGHT_IN = 59.5;
-    public static double SHOOTER_EXIT_HEIGHT_IN = 11.4173;
+    public static double SHOOTER_EXIT_HEIGHT_IN = 13.0;
     //TODO: The above value is a placeholder. Measure the actual height of the shooter exit from the floor.
 
     // The ball should be travelling downward through the target at this angle.
@@ -32,13 +32,13 @@ public class MovingShotCalculator {
 
     private final Shooter shooter;
     private final ServoTurret turret;
-    private final Ramp ramp;
+    private final Hood hood;
     private ShotSolution solution = ShotSolution.invalid();
 
-    public MovingShotCalculator(Shooter shooter, ServoTurret turret, Ramp ramp) {
+    public MovingShotCalculator(Shooter shooter, ServoTurret turret, Hood hood) {
         this.shooter = shooter;
         this.turret = turret;
-        this.ramp = ramp;
+        this.hood = hood;
     }
 
     /**

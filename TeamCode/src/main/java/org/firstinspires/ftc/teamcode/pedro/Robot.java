@@ -49,10 +49,10 @@ public class Robot {
         turret = new ServoTurret();
         turret.init(hardwareMap);   // ServoTurret uses init(), not a constructor
         ramp = new Ramp(hardwareMap);
-        movingShot = new MovingShotCalculator(shooter, turret, ramp);
+        hood = new Hood(hardwareMap);
+        movingShot = new MovingShotCalculator(shooter, turret, hood);
         follower = Constants.create(hardwareMap);
         intake = new Intake(hardwareMap);
-        hood = new Hood(hardwareMap);
 
         loop.reset();
 //        setShootTarget();
@@ -82,11 +82,10 @@ public class Robot {
 
     public CommandBuilder shootOff() {
         return sequential(
-                Commands.instant(shooter::off) // targets are updated continuously by MovingShotCalculator
+                Commands.instant(shooter::off) // targets are updated continuously by MovingShotCalculator 
         );
     }
 
-    public CommandBuilder spinUp() { return shooter.spinUp(); }
     public CommandBuilder intake() {
         return sequential(
                 intake.intake()

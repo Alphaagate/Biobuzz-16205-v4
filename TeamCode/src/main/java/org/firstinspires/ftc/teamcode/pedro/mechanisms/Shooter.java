@@ -234,6 +234,10 @@ public class Shooter {
         outtake.setPower(-power);
     }
 
+    public void setVelocity(double velocity) {
+        outtake.setVelocity(-velocity);
+    }
+
     // Enables the flywheels without choosing a fixed speed.
     // MovingShotCalculator supplies the target separately.
     public void on() {
@@ -252,10 +256,6 @@ public class Shooter {
     }
 
     // Optional fixed-speed mode for stationary testing.
-    public void shootNear() {
-        setTargetRpm(NEAR_RPM);
-        on();
-    }
 
     // --------------------------------------------------
     // Stationary calibration
@@ -268,24 +268,6 @@ public class Shooter {
                 + STATIC_TICKS_CONSTANT;
     }
 
-    // --------------------------------------------------
-    // Ivy commands
-    // --------------------------------------------------
-
-    // Fixed-speed command for stationary testing.
-    public CommandBuilder shoot() {
-        return Commands.instant(this::shootNear);
-    }
-
-    // Moving-shot spin-up: enable only.
-    // The calculator will continuously supply the target RPM.
-    public CommandBuilder spinUp() {
-        return Commands.instant(this::on);
-    }
-
-    public CommandBuilder stop() {
-        return Commands.instant(this::off);
-    }
 
     public CommandBuilder waitReady() {
         return Commands.waitUntil(this::atTarget);
