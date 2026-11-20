@@ -50,14 +50,14 @@ public class ServoTurret {
     // ========================================================================
 
     public void init(HardwareMap hwMap) {
-        turretA = hwMap.get(Servo.class, "turretA");
-        turretB = hwMap.get(Servo.class, "turretB");
-
-        turretA.setDirection(Servo.Direction.FORWARD);
-        turretB.setDirection(Servo.Direction.FORWARD);
-
-        setExtendedPwmRange(turretA);
-        setExtendedPwmRange(turretB);
+//        turretA = hwMap.get(Servo.class, "turretA");
+//        turretB = hwMap.get(Servo.class, "turretB");
+//
+//        turretA.setDirection(Servo.Direction.FORWARD);
+//        turretB.setDirection(Servo.Direction.FORWARD);
+//
+//        setExtendedPwmRange(turretA);
+//        setExtendedPwmRange(turretB);
     }
 
     private void setExtendedPwmRange(Servo servo) {
@@ -128,8 +128,8 @@ public class ServoTurret {
 
     public void setPosition(double position) {
         position = Math.max(0.0, Math.min(1.0, position));
-        turretA.setPosition(position - 0.01);
-        turretB.setPosition(position - 0.01);
+//        turretA.setPosition(position - 0.01);
+//        turretB.setPosition(position - 0.01);
     }
 
     public void adjustTrim(double delta) {

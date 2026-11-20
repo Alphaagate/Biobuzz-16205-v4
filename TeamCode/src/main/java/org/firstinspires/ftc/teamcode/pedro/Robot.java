@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.pedro;
 
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.commands.Commands.infinite;
+import static com.pedropathing.ivy.commands.Commands.waitMs;
+import static com.pedropathing.ivy.groups.Groups.race;
 import static com.pedropathing.ivy.groups.Groups.sequential;
 
 import com.pedropathing.follower.Follower;
@@ -73,10 +75,11 @@ public class Robot {
     public CommandBuilder shoot() {
         return sequential(
                 Commands.instant(shooter::on), // targets are updated continuously by MovingShotCalculator
-                shooter.waitReady(),          // wait until stable at target
+                race(shooter.waitReady(), waitMs(500)),
                 intake.intake(),              // feed balls
-                Commands.waitMs(400.0),
+                waitMs(400.0),
                 intake.off()
+
         );
     }
 

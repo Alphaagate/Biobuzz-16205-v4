@@ -154,8 +154,7 @@ public class Shooter {
 
         // DcMotorEx.getVelocity() reports encoder ticks/second.
         // Convert the measured velocity to RPM.
-        velocityRpm = ticksPerSecToRpm(outtake.getVelocity());
-
+        velocityRpm = -ticksPerSecToRpm(outtake.getVelocity());
         if (!activated || targetRpm <= 0.0) {
             setPower(0.0);
 

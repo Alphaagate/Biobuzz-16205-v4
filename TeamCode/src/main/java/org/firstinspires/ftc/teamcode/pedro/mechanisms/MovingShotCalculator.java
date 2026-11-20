@@ -51,7 +51,7 @@ public class MovingShotCalculator {
 
         if (!solution.valid) {
             // Keep the legacy, stationary aim available when a configuration is invalid.
-            turret.aimAtFieldPoint(pose, ServoTurret.GOAL_X, ServoTurret.GOAL_Y);
+//            turret.aimAtFieldPoint(pose, ServoTurret.GOAL_X, ServoTurret.GOAL_Y);
             return;
         }
 

@@ -28,7 +28,12 @@ android {
     }
 }
 
+repositories {
+    maven { url = "https://mymaven.bylazar.com/releases" }
+}
+
 dependencies {
     implementation project(':FtcRobotController')
+    
 //    implementation("dev.frozenmilk.sinister:Sloth:0.3.2")
 }
