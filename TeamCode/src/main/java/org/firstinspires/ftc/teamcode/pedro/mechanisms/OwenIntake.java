@@ -11,7 +11,7 @@ public class OwenIntake {
 
     public void init(HardwareMap hwMap) {
         intake = hwMap.get(DcMotor.class, "intake");
-        intake2 = hwMap.get(DcMotor.class, "intake2");
+        intake2 = hwMap.get(DcMotor.class, "transfer");
 
 
     }

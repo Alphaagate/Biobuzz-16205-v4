@@ -75,9 +75,9 @@ public class Robot {
     public CommandBuilder shoot() {
         return sequential(
                 Commands.instant(shooter::on), // targets are updated continuously by MovingShotCalculator
-                race(shooter.waitReady(), waitMs(500)),
+                race(shooter.waitReady(), waitMs(1500)),
                 intake.intake(),              // feed balls
-                waitMs(400.0),
+                waitMs(500),
                 intake.off()
 
         );

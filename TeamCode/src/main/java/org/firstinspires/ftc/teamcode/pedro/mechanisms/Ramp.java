@@ -8,8 +8,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 public class Ramp {
 
     private Servo ramp;
-    public static final double DOWN = 0;
-    public static final double UP = 1;
+    public static final double DOWN = 1;
+    public static final double UP = 0;
 
     public Ramp(HardwareMap hardwareMap) {
         ramp = hardwareMap.get(Servo.class, "ramp");

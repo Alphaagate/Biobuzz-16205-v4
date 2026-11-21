@@ -161,16 +161,16 @@ public class TwoTipAuto extends LinearOpMode {
 
         generatePaths();
         auto = sequential(
+                robot.rampup(),
                 robot.shoot(),
-                waitMs(500.0),
                 robot.shootOff(),
                 parallel(
                         follow(robot.follower, pickupCorner),
                         robot.intake()
                 ),
+                robot.stopIntake(),
                 follow(robot.follower, shootCorner),
                 robot.shoot(),
-                waitMs(500.0),
                 robot.shootOff(),
 
                 parallel(
@@ -180,23 +180,21 @@ public class TwoTipAuto extends LinearOpMode {
 
                 parallel(
                         follow(robot.follower, intakeFlower),
-                        robot.intake()
-                ),
-
+                        robot.intake(),
+                        waitMs(500.0)
+                        ),
+                robot.stopIntake(),
                 follow(robot.follower, shootFar),
                 robot.shoot(),
-                waitMs(500.0),
                 robot.shootOff(),
 
                 parallel(
                         follow(robot.follower, pickupLimelight),
                         robot.intake()
                 ),
-
-
+                robot.stopIntake(),
                 follow(robot.follower, shootLimelight),
                 robot.shoot(),
-                waitMs(500.0),
                 robot.shootOff(),
 
                 follow(robot.follower, park)
@@ -242,7 +240,6 @@ public class TwoTipAuto extends LinearOpMode {
             telemetry.addData("Shot valid", robot.movingShot.getSolution().valid);
             telemetry.addData("Flight time", robot.movingShot.getSolution().flightTime);
             telemetry.addData("Hood angle", Math.toDegrees(robot.movingShot.getSolution().hoodAngle));
-            telemetry.update();
             telemetry.addData(
                     "Follower Busy",
                     robot.follower.isBusy()

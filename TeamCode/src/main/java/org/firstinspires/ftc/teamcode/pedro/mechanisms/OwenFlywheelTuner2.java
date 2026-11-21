@@ -29,7 +29,6 @@ public class OwenFlywheelTuner2 {
         outtake.setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
-
     public void shoot(double targetVelocity) {
 
         if (targetVelocity > 0) {
