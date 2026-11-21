@@ -15,10 +15,11 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class OwenFlywheelTuner2 {
     private DcMotorEx outtake;
 
-    public static double P = 0.00;
-    public static double kV = 0.00;
+    public static double P = 0.005;
+    public static double kV = 0.00041;
     public static double kS = 0.036;
 
+    //1800 close 2020 far
 
 
     double velocity;

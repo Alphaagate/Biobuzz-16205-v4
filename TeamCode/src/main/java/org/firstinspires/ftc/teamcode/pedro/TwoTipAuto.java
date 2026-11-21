@@ -97,17 +97,17 @@ public class TwoTipAuto extends LinearOpMode {
 //        shootPreloads = line(startPose, pickupCornerStartPose)
 //                .linear(startPose, pickupCornerStartPose);
 
-        pickupCorner = line(startPose, pickupCornerPose).constant(pickupCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        pickupCorner = line(startPose, pickupCornerPose).constant(pickupCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.2));
 
-        shootCorner = line(shootCornerStartPose, shootCornerPose).linear(shootCornerStartPose, shootCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootCorner = line(shootCornerStartPose, shootCornerPose).linear(shootCornerStartPose, shootCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.2));
 
         intakeFlower = Paths.curve(shootCornerPose, intakeFlowerControl1Pose, intakeFlowerPose).constant(intakeFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
         shootFar = curve(shootFarStartPose, shootFarControl1Pose, shootFarControl2Pose, shootFarControl3Pose, shootFarPose).linear(shootFarStartPose, shootFarPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
-        pickupLimelight = curve(shootFarPose, pickupLimelightControl1Pose, pickupLimelightPose).heading(Interpolator.piecewise().until(0.114, Interpolator.constant(pickupLimelightSegment1HeadingPose)).until(1, Interpolator.tangent)).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        pickupLimelight = curve(shootFarPose, pickupLimelightControl1Pose, pickupLimelightPose).heading(Interpolator.piecewise().until(0.114, Interpolator.constant(pickupLimelightSegment1HeadingPose)).until(1, Interpolator.tangent)).with(Constants.foresightConfig.maxPathSpeed.at(0.2));
 
-        shootLimelight = Paths.curve(pickupLimelightPose, shootLimelightControl1Pose, shootLimelightPose).constant(shootLimelightPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
+        shootLimelight = Paths.curve(pickupLimelightPose, shootLimelightControl1Pose, shootLimelightPose).constant(shootLimelightPose).with(Constants.foresightConfig.maxPathSpeed.at(0.2));
 
         park = line(shootLimelightPose, parkPose).constant(parkPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
     }
@@ -259,6 +259,7 @@ public class TwoTipAuto extends LinearOpMode {
                     "Heading (deg)",
                     Math.toDegrees(robot.follower.pose().heading())
             );
+
 
             // Only added to let you verify that the Limelight is actually returning data.
 //            if (result != null && result.isValid()) {

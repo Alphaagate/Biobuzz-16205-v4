@@ -20,8 +20,10 @@ public class testtunertele extends OpMode {
 
     // ============================================================================
     // MECHANISMS
-    // ============================================================================
+    // ===========================================                                              `=================================
 
+    // field
+    private boolean shooterOn = false;
 
 
     private OwenFlywheelTuner2 shooter = new OwenFlywheelTuner2();
@@ -55,10 +57,16 @@ public class testtunertele extends OpMode {
 
     @Override
     public void loop() {
-        if (gamepad1.aWasPressed()){
-            shooter.shoot(shootvel);
+//        if (gamepad1.aWasPressed()){
+//            shooter.shoot(shootvel);
+//        }
+
+// in loop()
+        if (gamepad1.aWasPressed()) {
+            shooterOn = !shooterOn;
         }
 
+        shooter.shoot(shooterOn ? shootvel : 0);
 
         // ====================================================================
         // DRIVING
@@ -79,15 +87,11 @@ public class testtunertele extends OpMode {
         }
 
 
-        // ====================================================================
-        // FLYWHEEL + GATE
-        // gamepad2 right bumper: spin up flywheel only (no gate)
-        // gamepad1 left bumper:  open gate + spin up flywheel
-        // Flywheel stays on as long as either bumper is held
-        // ====================================================================
-        telemetry.addData("vel", shooter.getVel());
-        telemetry.addData("error", shootvel-shooter.getVel());
 
+        telemetry.addData("target", shootvel);
+        telemetry.addData("vel", shooter.getVel());
+        telemetry.addData("error", shootvel - shooter.getVel());
+        telemetry.update();
 
 
     }
