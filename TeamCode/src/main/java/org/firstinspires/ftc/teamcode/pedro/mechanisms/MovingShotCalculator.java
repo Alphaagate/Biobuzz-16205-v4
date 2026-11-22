@@ -7,14 +7,25 @@ import com.pedropathing.math.Velocity;
 /**
  * Calculates a no-drag, velocity-compensated shot in Pedro's field coordinate system.
  *
- * <p>All distance, height, and velocity values are inches, inches/second, and
- * inches/second^2. Pedro's {@link Follower#velocity()} is world-frame velocity, so no
- * heading rotation is needed before it is subtracted from the desired ball velocity.</p>
+ * <p>Distances/heights are inches, velocities are inches/second. Flywheel speed is "rpm" in
+ * Shooter's units (the number DcMotorEx.getVelocity() reports, same as OwenFlywheelTuner2).
+ * Pedro's {@link Follower#velocity()} is world-frame velocity, so no heading rotation is
+ * needed before it is subtracted from the desired ball velocity.</p>
+ *
+ * <p>How the flywheel speed is chosen:
+ * <ol>
+ *   <li>Standstill speed from distance: a straight line through the two measured points
+ *       (CAL_NEAR_DIST_IN -> CAL_NEAR_RPM, CAL_FAR_DIST_IN -> CAL_FAR_RPM).</li>
+ *   <li>Moving correction: physics gives the launch speed needed standing still and the launch
+ *       speed needed after subtracting the robot's velocity. Their ratio scales the standstill
+ *       rpm. Driving toward the goal lowers rpm, driving away raises it.</li>
+ * </ol>
+ * At standstill the ratio is exactly 1, so the calibration points are reproduced.</p>
  */
 public class MovingShotCalculator {
-    // Field target. These are shared with ServoTurret so there is exactly one X/Y target.
-    // Set these to the center of the CELL opening that is currently intended to score.
-    public static double TARGET_HEIGHT_IN = 59.5;
+    // ----- Target -----
+    // Field X/Y of the target lives in ServoTurret.GOAL_X / GOAL_Y so there is one source of truth.
+    public static double TARGET_HEIGHT_IN = 59.0;
     public static double SHOOTER_EXIT_HEIGHT_IN = 13.0;
     //TODO: The above value is a placeholder. Measure the actual height of the shooter exit from the floor.
 
@@ -22,10 +33,29 @@ public class MovingShotCalculator {
     public static double TARGET_ENTRY_ANGLE_DEGREES = -45.0;
     public static double GRAVITY_IN_PER_SEC_SQUARED = 386.09;
 
+    // ----- Standstill calibration (goal at (60, 60)) -----
+    // Robot at (39, 9): 1800 scores.   Robot at (9, 9): 2020 scores.
+    // Distances are robot-center-to-goal; the 1 in turret offset changes the result by < 10 rpm.
+    public static double CAL_NEAR_DIST_IN = Math.hypot(60.0 - 39.0, 60.0 - 9.0); // ~55.15 in
+    public static double CAL_NEAR_RPM = 1800.0;
+    public static double CAL_FAR_DIST_IN = Math.hypot(60.0 - 9.0, 60.0 - 9.0);   // ~72.12 in
+    public static double CAL_FAR_RPM = 2020.0;
+
+    /**
+     * How strongly rpm follows the physics speed ratio while moving.
+     * 1.0 = rpm scales in proportion to required launch speed.
+     * Tune while driving straight toward / away from the goal:
+     *   - short when driving away, long when driving toward -> rpm is under-corrected, raise it
+     *   - long when driving away, short when driving toward -> rpm is over-corrected, lower it
+     * 0.0 turns the rpm correction off (the turret lead still works).
+     */
+    public static double SPEED_COMP_GAIN = 1.0;
+
     // Reject degenerate or physically impossible solutions instead of commanding a bad shot.
     public static double MIN_DISTANCE_IN = 6.0;
-    public static double MIN_FLYWHEEL_TICKS_PER_SEC = 0.0;
-    public static double MAX_FLYWHEEL_TICKS_PER_SEC = 3000.0;
+    public static double MIN_RPM = 0.0;
+    // With kV = 0.00041 and kS = 0.036 full power is about 2350, so don't ask for more than this.
+    public static double MAX_RPM = 2300.0;
 
     /** Set false only when a fixed/manual shooter target is wanted for a test. */
     public static boolean APPLY_SHOOTER_SPEED = true;
@@ -50,15 +80,19 @@ public class MovingShotCalculator {
         solution = calculate(pose, velocity);
 
         if (!solution.valid) {
-            // Keep the legacy, stationary aim available when a configuration is invalid.
-//            turret.aimAtFieldPoint(pose, ServoTurret.GOAL_X, ServoTurret.GOAL_Y);
             return;
         }
 
         turret.aimAtFieldAngle(pose, solution.turretFieldAngle, solution.distanceToGoal);
         if (APPLY_SHOOTER_SPEED) {
-            shooter.setTarget(solution.flywheelTicksPerSec);
+            shooter.setTargetRpm(solution.flywheelRpm);
         }
+    }
+
+    /** Standstill flywheel speed for a given distance to the goal (straight line through the 2 calibration points). */
+    public static double rpmForStaticDistance(double distanceInches) {
+        double slope = (CAL_FAR_RPM - CAL_NEAR_RPM) / (CAL_FAR_DIST_IN - CAL_NEAR_DIST_IN);
+        return CAL_NEAR_RPM + slope * (distanceInches - CAL_NEAR_DIST_IN);
     }
 
     /**
@@ -122,22 +156,20 @@ public class MovingShotCalculator {
                 stationaryVerticalSpeed, compensatedHorizontalSpeed);
         double flightTime = distance / stationaryHorizontalSpeed;
 
-        // The existing team calibration maps a stationary distance to motor ticks/sec.
-        // Ball exit speed is approximately proportional to flywheel speed over the tuned range,
-        // so scale that empirical target by the exact velocity-compensation ratio.
-        double stationaryFlywheelTicks = Shooter.ticksForStaticDistance(distance);
-        double flywheelTicks = stationaryFlywheelTicks
-                * compensatedLaunchSpeed / stationaryLaunchSpeed;
-        flywheelTicks = clamp(flywheelTicks,
-                MIN_FLYWHEEL_TICKS_PER_SEC, MAX_FLYWHEEL_TICKS_PER_SEC);
+        // Standstill rpm for this spot on the field, then scaled by how much faster/slower the
+        // ball has to leave the shooter because the robot is moving.
+        double speedRatio = compensatedLaunchSpeed / stationaryLaunchSpeed;
+        double flywheelRpm = rpmForStaticDistance(distance)
+                * (1.0 + SPEED_COMP_GAIN * (speedRatio - 1.0));
+        flywheelRpm = clamp(flywheelRpm, MIN_RPM, MAX_RPM);
 
-        if (!isFinite(flightTime) || !isFinite(flywheelTicks)) {
+        if (!isFinite(flightTime) || !isFinite(flywheelRpm)) {
             return ShotSolution.invalid();
         }
 
         return new ShotSolution(true, distance, flightTime, stationaryLaunchSpeed,
                 compensatedLaunchSpeed, turretFieldAngle, compensatedHoodAngle,
-                flywheelTicks, turretVelocityX, turretVelocityY);
+                flywheelRpm, turretVelocityX, turretVelocityY);
     }
 
     public ShotSolution getSolution() {
@@ -160,14 +192,14 @@ public class MovingShotCalculator {
         public final double compensatedLaunchSpeed;
         public final double turretFieldAngle;
         public final double hoodAngle;
-        public final double flywheelTicksPerSec;
+        public final double flywheelRpm;
         public final double turretVelocityX;
         public final double turretVelocityY;
 
         private ShotSolution(boolean valid, double distanceToGoal, double flightTime,
                              double stationaryLaunchSpeed, double compensatedLaunchSpeed,
                              double turretFieldAngle, double hoodAngle,
-                             double flywheelTicksPerSec, double turretVelocityX,
+                             double flywheelRpm, double turretVelocityX,
                              double turretVelocityY) {
             this.valid = valid;
             this.distanceToGoal = distanceToGoal;
@@ -176,7 +208,7 @@ public class MovingShotCalculator {
             this.compensatedLaunchSpeed = compensatedLaunchSpeed;
             this.turretFieldAngle = turretFieldAngle;
             this.hoodAngle = hoodAngle;
-            this.flywheelTicksPerSec = flywheelTicksPerSec;
+            this.flywheelRpm = flywheelRpm;
             this.turretVelocityX = turretVelocityX;
             this.turretVelocityY = turretVelocityY;
         }

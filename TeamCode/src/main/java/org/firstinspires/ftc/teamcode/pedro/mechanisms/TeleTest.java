@@ -9,9 +9,11 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.pedro.OpModeStorage;
 import org.firstinspires.ftc.teamcode.pedro.Robot;
 
-@TeleOp(name = "Simple TeleOp blue side")
+@TeleOp(name = "TuffTeleTest")
 public class TeleTest extends OpMode {
     Robot robot;
+    private boolean rampUp = false;
+    private boolean lastA = false;
 
     @Override
     public void init() {
@@ -33,16 +35,28 @@ public class TeleTest extends OpMode {
 
         // Relocalize
         if (gamepad1.startWasPressed()) {
-            robot.follower.setPose(new Pose(10.5, 10.5, Math.toRadians(90)));
+            robot.follower.setPose(new Pose(9, 9, Math.toRadians(90)));
         }
 
         // Intake: set power directly, no Ivy needed
-        if (gamepad1.a) {
+        if (gamepad1.left_bumper) {
             robot.intake.set(1, 1);      // run intake
-        } else if (gamepad1.b) {
+        } else {
             robot.intake.set(0, 0);      // stop intake
         }
+// Toggle ramp position with A
+        if (gamepad1.a && !lastA) {
+            rampUp = !rampUp;
 
+            if (rampUp) {
+//                robot.ramp.();    // Move servo to UP position
+            } else {
+                robot.rampdown();  // Move servo to DOWN position
+            }//rampup is command builder so the commands dont doanything in teleop
+
+        }
+
+        lastA = gamepad1.a;
         robot.follower.update();
 
         Pose p = robot.follower.pose();

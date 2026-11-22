@@ -18,7 +18,6 @@ public class TeleOp16205DriveCode extends OpMode {
     @Override
     public void init() {
         robot = new Robot(hardwareMap);
-        follower = Constants.create(hardwareMap);
         robot.follower.setPose(OpModeStorage.autonomousEndPose);
         robot.follower.update();
     }

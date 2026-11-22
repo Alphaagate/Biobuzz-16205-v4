@@ -211,13 +211,10 @@ public class TwoTipAuto extends LinearOpMode {
             if (robot.follower.pose().y() >= 70.0) {
                 ServoTurret.GOAL_X = 60.0;
                 ServoTurret.GOAL_Y = 80.0;
-                MovingShotCalculator.TARGET_HEIGHT_IN = 59.5;
             } else {
                 ServoTurret.GOAL_X = 60.0;
                 ServoTurret.GOAL_Y = 60.0;
-                MovingShotCalculator.TARGET_HEIGHT_IN = 59.5;
             }
-            robot.shooter.periodic();
             robot.updateMovingShot();
 
             // Run your Ivy scheduler

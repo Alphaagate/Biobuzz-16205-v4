@@ -1,4 +1,3 @@
-
 package org.firstinspires.ftc.teamcode.pedro.mechanisms;
 
 import com.pedropathing.ivy.CommandBuilder;
@@ -6,97 +5,53 @@ import com.pedropathing.ivy.commands.Commands;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
+/**
+ * Flywheel controller. Uses the exact same control law as OwenFlywheelTuner2:
+ *
+ *     power = P * (target - measured) + kV * target + kS
+ *
+ * UNITS: "rpm" in this class means the number DcMotorEx.getVelocity() reports. That is the
+ * same number OwenFlywheelTuner2 printed, so "1800 close / 2020 far" are used as-is.
+ * (getVelocity() is really encoder ticks per second. With a 28-tick encoder,
+ * true RPM = this value * 60 / 28.)
+ */
 public class Shooter {
     private final DcMotorEx outtake;
-    private final VoltageSensor battery;
 
-    // Encoder conversion.
-    // This must be the encoder ticks per revolution reported by getVelocity().
-    public static double TICKS_PER_REV = 28.0;
+    // ----- Gains from OwenFlywheelTuner2 (P = 0.005, 0.00041, 0.036) -----
+    // In OwenFlywheelTuner2 the values 0.036 and 0.00041 were typed into kV and kS the wrong
+    // way around: kV * 1800 would be 64.8 (full power at any target). 0.00041 is the
+    // per-velocity-unit term (kV) and 0.036 is the static term (kS), which also matches
+    // OwenFlywheel.java (kV = 0.00036, kS = 0.08).
+    public static double P = 0.005;
+    public static double kV = 0.00041;
+    public static double kS = 0.036;
 
-    // PIDF tunables. These gains are now expressed for RPM error.
-    // Converted from the previous ticks/second gains using TICKS_PER_REV = 28.
-    public static double kS = 0.08;
-    public static double kV = 0.00039 * 28.0 / 60.0;
-    public static double kP = 0.01 * 28.0 / 60.0;
-    public static double kI = 0.0;
-    public static double kD = 0.0;
-
-    // Maximum contribution of the integral term, in motor-power units.
-    public static double I_MAX = 0.15;
-    public static double NOMINAL_VOLTS = 12.0;
-
-    // RPM equivalents of the previous settings.
-    public static double NEAR_RPM = 1500.0 * 60.0 / 28.0;
-    public static double TOLERANCE_RPM = 50.0 * 60.0 / 28.0;
+    // "Ready to shoot" window: measured speed must stay within TOLERANCE_RPM of the target
+    // for STABLE_SECONDS before atTarget() returns true.
+    public static double TOLERANCE_RPM = 50.0;
     public static double STABLE_SECONDS = 0.15;
 
-    // Original stationary-shot calibration.
-    // Kept in ticks/second because MovingShotCalculator uses this curve.
-    public static double STATIC_TICKS_QUADRATIC = 0.00180088;
-    public static double STATIC_TICKS_LINEAR = 4.14265;
-    public static double STATIC_TICKS_CONSTANT = 948.97358;
-
-    // The controller's internal target and measured velocity are RPM.
     private double targetRpm = 0.0;
     private double velocityRpm = 0.0;
 
-    // The calculator can update the target without enabling the motors.
+    // MovingShotCalculator can update the target while the flywheel is disabled.
     private boolean activated = false;
 
-    private double integral = 0.0;
-    private double lastVelocityRpm = 0.0;
-    private double lastTime = 0.0;
-
-    private boolean hasLastVelocity = false;
     private double inTolSince = -1.0;
 
     public Shooter(HardwareMap hw) {
         outtake = hw.get(DcMotorEx.class, "outtakemotor");
 
-        outtake.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        battery = hw.voltageSensor.iterator().next();
-    }
-
-    // --------------------------------------------------
-    // Unit conversion
-    // --------------------------------------------------
-
-    public static double ticksPerSecToRpm(double ticksPerSec) {
-        return ticksPerSec * 60.0 / TICKS_PER_REV;
-    }
-
-    public static double rpmToTicksPerSec(double rpm) {
-        return rpm * TICKS_PER_REV / 60.0;
-    }
-
-    // Compatibility helpers for any existing code using the old names.
-    public static double rpmToTicks(double rpm) {
-        return rpmToTicksPerSec(rpm);
-    }
-
-    public static double ticksToRpm(double ticksPerSec) {
-        return ticksPerSecToRpm(ticksPerSec);
+        // Same direction as OwenFlywheelTuner2: positive power and positive velocity.
+        outtake.setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
     // --------------------------------------------------
     // Target setting
     // --------------------------------------------------
-
-    /**
-     * Compatibility method used by MovingShotCalculator.
-     *
-     * MovingShotCalculator supplies ticks/second.
-     * Convert that value to RPM immediately so the shooter
-     * controller itself operates entirely in RPM.
-     */
-    public void setTarget(double ticksPerSec) {
-        setTargetRpm(ticksPerSecToRpm(ticksPerSec));
-    }
 
     public void setTargetRpm(double rpm) {
         if (!Double.isFinite(rpm) || rpm < 0.0) {
@@ -112,7 +67,6 @@ public class Shooter {
         targetRpm = rpm;
 
         if (targetRpm == 0.0) {
-            integral = 0.0;
             inTolSince = -1.0;
         }
     }
@@ -125,7 +79,7 @@ public class Shooter {
         return velocityRpm;
     }
 
-    // These existing getters now also return RPM.
+    // Existing getter names (used by the autos' telemetry).
     public double getTarget() {
         return targetRpm;
     }
@@ -139,79 +93,28 @@ public class Shooter {
     }
 
     // --------------------------------------------------
-    // PIDF controller
-    // Call this once per OpMode loop.
+    // Controller. Call once per OpMode loop.
     // --------------------------------------------------
 
     public void periodic() {
-        double now = System.nanoTime() / 1e9;
+        velocityRpm = outtake.getVelocity();
 
-        double dt = (lastTime == 0.0)
-                ? 0.02
-                : Math.max(now - lastTime, 1e-3);
-
-        lastTime = now;
-
-        // DcMotorEx.getVelocity() reports encoder ticks/second.
-        // Convert the measured velocity to RPM.
-        velocityRpm = -ticksPerSecToRpm(outtake.getVelocity());
         if (!activated || targetRpm <= 0.0) {
-            setPower(0.0);
-
-            integral = 0.0;
+            outtake.setPower(0.0);
             inTolSince = -1.0;
-
-            lastVelocityRpm = velocityRpm;
-            hasLastVelocity = true;
-
             return;
         }
 
         double error = targetRpm - velocityRpm;
 
-        // Integral term with anti-windup.
-        if (Math.abs(kI) > 1e-9) {
-            integral += error * dt;
+        double feedback = P * error;
+        double feedforward = kV * targetRpm + kS;
 
-            double maxIntegral = I_MAX / Math.abs(kI);
-            integral = clamp(integral, -maxIntegral, maxIntegral);
-        } else {
-            integral = 0.0;
-        }
+        outtake.setPower(clamp(feedback + feedforward, 0.0, 1.0));
 
-        // Derivative on measured velocity avoids a large derivative
-        // kick whenever the moving-shot target changes.
-        double derivative = 0.0;
-
-        if (hasLastVelocity) {
-            derivative = -(velocityRpm - lastVelocityRpm) / dt;
-        }
-
-        lastVelocityRpm = velocityRpm;
-        hasLastVelocity = true;
-
-        // Feedforward + PID feedback.
-        double feedforward = kS + kV * targetRpm;
-
-        double feedback =
-                kP * error
-                        + kI * integral
-                        + kD * derivative;
-
-        // Battery-voltage compensation.
-        double volts = Math.max(battery.getVoltage(), 8.0);
-
-        double power =
-                (feedforward + feedback)
-                        * (NOMINAL_VOLTS / volts);
-
-        setPower(clamp(power, 0.0, 1.0));
-
-        // The measured RPM must remain within tolerance
-        // for STABLE_SECONDS before the shooter is ready.
         if (Math.abs(error) < TOLERANCE_RPM) {
             if (inTolSince < 0.0) {
-                inTolSince = now;
+                inTolSince = System.nanoTime() / 1e9;
             }
         } else {
             inTolSince = -1.0;
@@ -221,8 +124,7 @@ public class Shooter {
     public boolean atTarget() {
         return targetRpm > 0.0
                 && inTolSince >= 0.0
-                && (System.nanoTime() / 1e9 - inTolSince)
-                >= STABLE_SECONDS;
+                && (System.nanoTime() / 1e9 - inTolSince) >= STABLE_SECONDS;
     }
 
     // --------------------------------------------------
@@ -230,14 +132,14 @@ public class Shooter {
     // --------------------------------------------------
 
     public void setPower(double power) {
-        outtake.setPower(-power);
+        outtake.setPower(power);
     }
 
     public void setVelocity(double velocity) {
-        outtake.setVelocity(-velocity);
+        outtake.setVelocity(velocity);
     }
 
-    // Enables the flywheels without choosing a fixed speed.
+    // Enables the flywheel without choosing a speed.
     // MovingShotCalculator supplies the target separately.
     public void on() {
         activated = true;
@@ -246,27 +148,9 @@ public class Shooter {
     public void off() {
         activated = false;
         targetRpm = 0.0;
-
-        integral = 0.0;
         inTolSince = -1.0;
-        hasLastVelocity = false;
-
-        setPower(0.0);
+        outtake.setPower(0.0);
     }
-
-    // Optional fixed-speed mode for stationary testing.
-
-    // --------------------------------------------------
-    // Stationary calibration
-    // Kept in ticks/second for MovingShotCalculator.
-    // --------------------------------------------------
-
-    public static double ticksForStaticDistance(double distanceInches) {
-        return STATIC_TICKS_QUADRATIC * distanceInches * distanceInches
-                + STATIC_TICKS_LINEAR * distanceInches
-                + STATIC_TICKS_CONSTANT;
-    }
-
 
     public CommandBuilder waitReady() {
         return Commands.waitUntil(this::atTarget);
@@ -279,6 +163,4 @@ public class Shooter {
     public String getLeftCurrent() {
         return "Left: " + outtake.getCurrent(CurrentUnit.AMPS);
     }
-
-
 }

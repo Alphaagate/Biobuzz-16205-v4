@@ -69,9 +69,8 @@ public class Robot {
 
 
     public Pose getShootTarget() {
-        return shootTarget;
+        return new Pose(ServoTurret.GOAL_X, ServoTurret.GOAL_Y, 0);
     }
-
     public CommandBuilder shoot() {
         return sequential(
                 Commands.instant(shooter::on), // targets are updated continuously by MovingShotCalculator
