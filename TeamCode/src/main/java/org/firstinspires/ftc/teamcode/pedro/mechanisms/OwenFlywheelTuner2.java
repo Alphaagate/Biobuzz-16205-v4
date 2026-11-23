@@ -10,10 +10,14 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.teamcode.pedro.Robot;
 
 @Configurable
 public class OwenFlywheelTuner2 {
     private DcMotorEx outtake;
+    Robot robot;
 
     public static double P = 0.005;
     public static double kV = 0.00041;
@@ -50,6 +54,9 @@ public class OwenFlywheelTuner2 {
 
     }
     public double getVel(){return outtake.getVelocity();}
+    public double getPoseX(){return robot.follower.pose().x();}
+    public double getPoseY(){return robot.follower.pose().y();}
+
 
 
 

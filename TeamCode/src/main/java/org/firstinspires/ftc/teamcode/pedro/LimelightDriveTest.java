@@ -238,7 +238,6 @@ public class LimelightDriveTest extends LinearOpMode {
         generatePaths();
         auto = sequential(
                 robot.shoot(),
-                waitMs(500.0),
                 robot.shootOff(),
                 parallel(
                         follow(robot.follower, pickupCorner),
@@ -246,7 +245,6 @@ public class LimelightDriveTest extends LinearOpMode {
                 ),
                 follow(robot.follower, shootCorner),
                 robot.shoot(),
-                waitMs(500.0),
                 robot.shootOff(),
 
                 parallel(
@@ -261,7 +259,6 @@ public class LimelightDriveTest extends LinearOpMode {
 
                 follow(robot.follower, shootFar),
                 robot.shoot(),
-                waitMs(500.0),
                 robot.shootOff(),
                 parallel(
                         sequential(

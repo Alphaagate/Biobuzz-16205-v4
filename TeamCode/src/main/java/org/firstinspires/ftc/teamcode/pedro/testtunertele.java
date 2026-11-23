@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
@@ -30,6 +31,7 @@ public class testtunertele extends OpMode {
     private boolean shoot = false;
     public static double shootvel;
     private OwenIntake intake = new OwenIntake();
+    private Servo hood;
 
 
     // ============================================================================
@@ -46,7 +48,7 @@ public class testtunertele extends OpMode {
     public void init() {
 
         intake.init(hardwareMap);
-
+        hood = hardwareMap.get(Servo.class, "hood");
         shooter.init(hardwareMap);
     }
 
@@ -72,7 +74,7 @@ public class testtunertele extends OpMode {
         // DRIVING
         // ====================================================================
 
-
+        hood.setPosition(1);
 
         // ====================================================================
         // INTAKE
@@ -91,6 +93,8 @@ public class testtunertele extends OpMode {
         telemetry.addData("target", shootvel);
         telemetry.addData("vel", shooter.getVel());
         telemetry.addData("error", shootvel - shooter.getVel());
+        telemetry.addData("poseX", shooter.getPoseX());
+        telemetry.addData("poseY", shooter.getPoseY());
         telemetry.update();
 
 
