@@ -310,7 +310,6 @@ public class LimelightDriveTest extends LinearOpMode {
             telemetry.addData("At target", robot.shooter.atTarget());
             telemetry.addData("Shot valid", robot.movingShot.getSolution().valid);
             telemetry.addData("Flight time", robot.movingShot.getSolution().flightTime);
-            telemetry.addData("Hood angle", Math.toDegrees(robot.movingShot.getSolution().hoodAngle));
             telemetry.update();
             telemetry.addData(
                     "Follower Busy",
