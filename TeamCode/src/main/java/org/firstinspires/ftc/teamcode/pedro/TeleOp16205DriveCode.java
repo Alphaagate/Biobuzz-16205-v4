@@ -48,7 +48,6 @@ public class TeleOp16205DriveCode extends OpMode {
         telemetry.addData("Robot Heading", Math.toDegrees(robotPose.heading()));
         telemetry.addData("Shot target", robot.shooter.getTarget());
         telemetry.addData("Shot speed", robot.movingShot.getSolution().compensatedLaunchSpeed);
-        telemetry.addData("Hood angle", Math.toDegrees(robot.movingShot.getSolution().hoodAngle));
         telemetry.addData("Shot valid", robot.movingShot.getSolution().valid);
         // Math.toDegrees() is a built-in java method
     }
