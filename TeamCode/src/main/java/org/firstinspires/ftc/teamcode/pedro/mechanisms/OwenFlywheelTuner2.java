@@ -19,7 +19,7 @@ public class OwenFlywheelTuner2 {
     private DcMotorEx outtake;
      Robot robot;
 
-    public static double P = 0.005;
+    public static double P = 0.01;
     public static double kV = 0.00041;
     public static double kS = 0.036;
 
@@ -54,8 +54,8 @@ public class OwenFlywheelTuner2 {
 
     }
     public double getVel(){return outtake.getVelocity();}
-    public double getPoseX(){return robot.follower.pose().x();}
-    public double getPoseY(){return robot.follower.pose().y();}
+//    public double getPoseX(){return robot.follower.pose().x();}
+//    public double getPoseY(){return robot.follower.pose().y();}
 
 
 

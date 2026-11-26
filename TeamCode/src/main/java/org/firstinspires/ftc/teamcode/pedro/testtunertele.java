@@ -74,7 +74,6 @@ public class testtunertele extends OpMode {
         // DRIVING
         // ====================================================================
 
-        hood.setPosition(1);
 
         // ====================================================================
         // INTAKE
@@ -93,8 +92,8 @@ public class testtunertele extends OpMode {
         telemetry.addData("target", shootvel);
         telemetry.addData("vel", shooter.getVel());
         telemetry.addData("error", shootvel - shooter.getVel());
-        telemetry.addData("poseX", shooter.getPoseX());
-        telemetry.addData("poseY", shooter.getPoseY());
+//        telemetry.addData("poseX", shooter.getPoseX());
+//        telemetry.addData("poseY", shooter.getPoseY());
         telemetry.update();
 
 

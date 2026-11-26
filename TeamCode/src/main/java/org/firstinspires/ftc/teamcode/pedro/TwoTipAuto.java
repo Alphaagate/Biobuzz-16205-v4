@@ -202,6 +202,7 @@ public class TwoTipAuto extends LinearOpMode {
         );
         telemetry.addLine("Initialized - Ready!");
         telemetry.update();
+
         waitForStart();
 
         schedule(auto);
@@ -261,7 +262,6 @@ public class TwoTipAuto extends LinearOpMode {
             telemetry.addData("At target", robot.shooter.atTarget());
             telemetry.addData("Shot valid", robot.movingShot.getSolution().valid);
             telemetry.addData("Flight time", robot.movingShot.getSolution().flightTime);
-            telemetry.addData("Hood angle", Math.toDegrees(robot.movingShot.getSolution().hoodAngle));
             telemetry.addData(
                     "Follower Busy",
                     robot.follower.isBusy()

@@ -6,8 +6,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-
 /**
+ *
+ * TODO: * IMPORTANT !!! HOOD SHOULD BE 7 from the top!!!!
+ *
  * Flywheel controller. Uses the exact same control law as OwenFlywheelTuner2:
  *
  *     power = P * (target - measured) + kV * target + kS

@@ -62,13 +62,11 @@ public class MovingShotCalculator {
 
     private final Shooter shooter;
     private final ServoTurret turret;
-    private final Hood hood;
     private ShotSolution solution = ShotSolution.invalid();
 
-    public MovingShotCalculator(Shooter shooter, ServoTurret turret, Hood hood) {
+    public MovingShotCalculator(Shooter shooter, ServoTurret turret) {
         this.shooter = shooter;
         this.turret = turret;
-        this.hood = hood;
     }
 
     /**
@@ -152,8 +150,7 @@ public class MovingShotCalculator {
         }
 
         double turretFieldAngle = Math.atan2(requiredLaunchY, requiredLaunchX);
-        double compensatedHoodAngle = Math.atan2(
-                stationaryVerticalSpeed, compensatedHorizontalSpeed);
+
         double flightTime = distance / stationaryHorizontalSpeed;
 
         // Standstill rpm for this spot on the field, then scaled by how much faster/slower the
@@ -168,7 +165,7 @@ public class MovingShotCalculator {
         }
 
         return new ShotSolution(true, distance, flightTime, stationaryLaunchSpeed,
-                compensatedLaunchSpeed, turretFieldAngle, compensatedHoodAngle,
+                compensatedLaunchSpeed, turretFieldAngle,
                 flywheelRpm, turretVelocityX, turretVelocityY);
     }
 
@@ -191,14 +188,13 @@ public class MovingShotCalculator {
         public final double stationaryLaunchSpeed;
         public final double compensatedLaunchSpeed;
         public final double turretFieldAngle;
-        public final double hoodAngle;
         public final double flywheelRpm;
         public final double turretVelocityX;
         public final double turretVelocityY;
 
         private ShotSolution(boolean valid, double distanceToGoal, double flightTime,
                              double stationaryLaunchSpeed, double compensatedLaunchSpeed,
-                             double turretFieldAngle, double hoodAngle,
+                             double turretFieldAngle,
                              double flywheelRpm, double turretVelocityX,
                              double turretVelocityY) {
             this.valid = valid;
@@ -207,14 +203,13 @@ public class MovingShotCalculator {
             this.stationaryLaunchSpeed = stationaryLaunchSpeed;
             this.compensatedLaunchSpeed = compensatedLaunchSpeed;
             this.turretFieldAngle = turretFieldAngle;
-            this.hoodAngle = hoodAngle;
             this.flywheelRpm = flywheelRpm;
             this.turretVelocityX = turretVelocityX;
             this.turretVelocityY = turretVelocityY;
         }
 
         private static ShotSolution invalid() {
-            return new ShotSolution(false, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            return new ShotSolution(false, 0, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 }

@@ -54,7 +54,7 @@ public class Robot {
         ramp = new Ramp(hardwareMap);
         gate = new Gate(hardwareMap);
         hood = new Hood(hardwareMap);
-        movingShot = new MovingShotCalculator(shooter, turret, hood);
+        movingShot = new MovingShotCalculator(shooter, turret);
         follower = Constants.create(hardwareMap);
         intake = new Intake(hardwareMap);
 
@@ -166,7 +166,7 @@ public class Robot {
     }
 
     public void updateHoodAim() {
-        hood.aimForDistance(distanceToShootTarget());
+        hood.hold();
     }
     public double getLoopTimeMs() {
         return loopTime;

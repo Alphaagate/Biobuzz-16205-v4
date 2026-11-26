@@ -1,6 +1,8 @@
 
 package org.firstinspires.ftc.teamcode.pedro.mechanisms;
 
+import com.pedropathing.ivy.CommandBuilder;
+import com.pedropathing.ivy.commands.Commands;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -42,74 +44,85 @@ public class Hood {
     // =========================================
     // BALLISTIC CALCULATION
     // =========================================
+    public static final double HOLD = 0.5;
 
-    public double calculateLaunchAngle(double distance) {
 
-        if (!Double.isFinite(distance) || distance <= 0) {
-            throw new IllegalArgumentException(
-                    "Distance must be greater than zero."
-            );
-        }
 
-        double height =
-                TARGET_HEIGHT_IN - SHOOTER_EXIT_HEIGHT_IN;
-
-        double entryAngle =
-                Math.toRadians(TARGET_ENTRY_ANGLE_DEGREES);
-
-        double launchAngle = Math.atan(
-                2.0 * height / distance - Math.tan(entryAngle)
-        );
-
-        return Math.toDegrees(launchAngle);
+    public void hold() {
+        hood.setPosition(HOLD);
     }
+
+
+
+    public CommandBuilder holdhood() { return Commands.instant(this::hold); }
+
+//    public double calculateLaunchAngle(double distance) {
+//
+//        if (!Double.isFinite(distance) || distance <= 0) {
+//            throw new IllegalArgumentException(
+//                    "Distance must be greater than zero."
+//            );
+//        }
+//
+//        double height =
+//                TARGET_HEIGHT_IN - SHOOTER_EXIT_HEIGHT_IN;
+//
+//        double entryAngle =
+//                Math.toRadians(TARGET_ENTRY_ANGLE_DEGREES);
+//
+//        double launchAngle = Math.atan(
+//                2.0 * height / distance - Math.tan(entryAngle)
+//        );
+//
+//        return Math.toDegrees(launchAngle);
+//    }
 
     // =========================================
     // AUTOMATIC HOOD CONTROL
     // =========================================
 
-    public void aimForDistance(double distance) {
+//    public void aimForDistance(double distance) {
+//
+//        double angle = calculateLaunchAngle(distance);
+//
+//        setLaunchAngleDegrees(angle);
+//    }
 
-        double angle = calculateLaunchAngle(distance);
-
-        setLaunchAngleDegrees(angle);
-    }
-
-    public void setLaunchAngleDegrees(double requestedAngle) {
-
-        // Keep the hood within its mechanical limits.
-        double angle = clamp(
-                requestedAngle,
-                MIN_LAUNCH_ANGLE_DEG,
-                MAX_LAUNCH_ANGLE_DEG
-        );
-
-        commandedAngle = angle;
-
-        // Convert launch angle into a normalized servo position.
-        double fraction =
-                (angle - MIN_LAUNCH_ANGLE_DEG) /
-                        (MAX_LAUNCH_ANGLE_DEG - MIN_LAUNCH_ANGLE_DEG);
-
-        double position =
-                SERVO_AT_MIN_ANGLE +
-                        fraction * (SERVO_AT_MAX_ANGLE - SERVO_AT_MIN_ANGLE);
-
-        // Stay inside the calibrated servo range.
-        double low = Math.min(
-                SERVO_AT_MIN_ANGLE,
-                SERVO_AT_MAX_ANGLE
-        );
-
-        double high = Math.max(
-                SERVO_AT_MIN_ANGLE,
-                SERVO_AT_MAX_ANGLE
-        );
-
-        servoPosition = clamp(position, low, high);
-
-        hood.setPosition(servoPosition);
-    }
+//    public void setLaunchAngleDegrees(double requestedAngle) {
+//
+//        // Keep the hood within its mechanical limits.
+//        double angle = clamp(
+//                requestedAngle,
+//                MIN_LAUNCH_ANGLE_DEG,
+//                MAX_LAUNCH_ANGLE_DEG
+//        );
+//
+//        commandedAngle = angle;
+//
+//        // Convert launch angle into a normalized servo position.
+//        double fraction =
+//                (angle - MIN_LAUNCH_ANGLE_DEG) /
+//                        (MAX_LAUNCH_ANGLE_DEG - MIN_LAUNCH_ANGLE_DEG);
+//
+//        double position =
+//                SERVO_AT_MIN_ANGLE +
+//                        fraction * (SERVO_AT_MAX_ANGLE - SERVO_AT_MIN_ANGLE);
+//
+//        // Stay inside the calibrated servo range.
+//        double low = Math.min(
+//                SERVO_AT_MIN_ANGLE,
+//                SERVO_AT_MAX_ANGLE
+//        );
+//
+//        double high = Math.max(
+//                SERVO_AT_MIN_ANGLE,
+//                SERVO_AT_MAX_ANGLE
+//        );
+//
+//        servoPosition = clamp(position, low, high);
+//
+//        hood.setPosition(servoPosition);
+//    }
 
     // =========================================
     // HELPERS
