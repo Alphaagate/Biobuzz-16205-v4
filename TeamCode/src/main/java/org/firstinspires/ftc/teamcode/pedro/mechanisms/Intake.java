@@ -13,7 +13,7 @@ public class Intake {
     public static final double OFF = 0;
     public static final double IDLE = 0.5;
     public static final double INTAKE_POWER = 1;
-    private static final double TRANSFER_POWER = 1;
+    private static final double TRANSFER_POWER = 0.8;
     public static final double SPITOUT_POWER = -1;
 
 

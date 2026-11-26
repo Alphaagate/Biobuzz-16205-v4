@@ -46,10 +46,10 @@ public class TwoTipAuto extends LinearOpMode {
     private final Pose pickupCornerPose = poseFactory.of(9, 9, 180);
     private final Pose shootCornerStartPose = poseFactory.of(9, 9, 180);
     private final Pose shootCornerPose = poseFactory.of(39, 9, 180);
-    private final Pose intakeFlowerPose = poseFactory.of(10, 48, 180);
+    private final Pose intakeFlowerPose = poseFactory.of(12, 48, 180);
     private final Pose intakeFlowerControl1Pose = poseFactory.of(40.1234, 52.3672, 0);
     private final Pose shootFarStartPose = poseFactory.of(12, 48, 180);
-    private final Pose shootFarPose = poseFactory.of(48, 134, 90);
+    private final Pose shootFarPose = poseFactory.of(48, 129.165, 90);
     private final Pose shootFarControl1Pose = poseFactory.of(31.5437, 51.0714, 0);
     private final Pose shootFarControl2Pose = poseFactory.of(6.6204, 111.3712, 0);
     private final Pose shootFarControl3Pose = poseFactory.of(50.3263, 95.8882, 0);
@@ -158,9 +158,10 @@ public class TwoTipAuto extends LinearOpMode {
         // Pollen pipeline
         limelight.pipelineSwitch(0);
         limelight.start();
-
+        robot.ramp.rampUp();
         generatePaths();
         auto = sequential(
+                robot.gateopen(),
                 robot.rampup(),
                 robot.shoot(),
                 robot.shootOff(),
@@ -178,16 +179,16 @@ public class TwoTipAuto extends LinearOpMode {
                         robot.rampdown()
                 ),
 
-                parallel(
+                sequential(
                         follow(robot.follower, intakeFlower),
                         robot.intake(),
-                        waitMs(500.0)
+                        waitMs(1000.0)
                         ),
                 robot.stopIntake(),
                 follow(robot.follower, shootFar),
                 robot.shoot(),
                 robot.shootOff(),
-
+                robot.rampup(),
                 parallel(
                         follow(robot.follower, pickupLimelight),
                         robot.intake()
@@ -210,15 +211,40 @@ public class TwoTipAuto extends LinearOpMode {
             if (robot.follower.pose().y() >= 70.0) {
                 ServoTurret.GOAL_X = 60.0;
                 ServoTurret.GOAL_Y = 80.0;
+                ServoTurret.GOAL_Y = 80.0;
             } else {
                 ServoTurret.GOAL_X = 60.0;
                 ServoTurret.GOAL_Y = 60.0;
             }
+// Calculates moving-shot compensation,
+// commands turret angle, and updates flywheel power.
             robot.updateMovingShot();
 
-            // Run your Ivy scheduler
+// Run Ivy scheduler
             Scheduler.execute();
+
+// Update hood
             robot.updateHoodAim();
+
+            telemetry.addData("Robot X", robot.follower.pose().x());
+            telemetry.addData("Robot Y", robot.follower.pose().y());
+
+            telemetry.addData("Robot Heading",
+                    Math.toDegrees(robot.follower.pose().heading()));
+
+            telemetry.addData("Turret Current Angle",
+                    robot.turret.getTurretAngleDegrees());
+
+            telemetry.addData("Turret Target Angle",
+                    robot.turret.getTargetAngleDegrees());
+
+            telemetry.addData("Turret Current Ticks",
+                    robot.turret.getCurrentTicks());
+            telemetry.addData("Turret Target Ticks",
+                    robot.turret.getTargetTicks());
+
+            telemetry.addData("Turret At Target",
+                    robot.turret.atTarget());
 
             telemetry.addData(
                     "Hood Launch Angle",

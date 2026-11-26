@@ -9,11 +9,12 @@ public class Gate {
 
     private Servo gate;
     public static final double CLOSED = 1;
-    public static final double OPEN = 0;
+    public static final double OPEN = 0.5;
 
     public Gate(HardwareMap hardwareMap) {
         gate = hardwareMap.get(Servo.class, "gate");
-    }   
+        gateClosed();
+    }
 
     public void gateClosed() {
         gate.setPosition(CLOSED);

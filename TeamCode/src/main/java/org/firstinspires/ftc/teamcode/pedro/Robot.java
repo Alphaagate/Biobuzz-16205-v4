@@ -76,14 +76,12 @@ public class Robot {
     public CommandBuilder shoot() {
         return sequential(
                 Commands.instant(shooter::on), // targets are updated continuously by MovingShotCalculator
-                race(shooter.waitReady(), waitMs(500)),
-                Commands.instant(gate::gateOpen),
+                shooter.waitReady(),
+                gateopen(),
                 intake.intake(),              // feed balls
                 waitMs(500),
                 intake.off(),
-                Commands.instant(gate::gateClosed)
-
-
+                gateclose()
                 );
     }
 
@@ -110,7 +108,17 @@ public class Robot {
                 ramp.down()
         );
     }
+    public CommandBuilder gateopen() {
+        return sequential(
+                gate.open()
+        );
+    }
 
+    public CommandBuilder gateclose() {
+        return sequential(
+                gate.closed()
+        );
+    }
 
     public Command aimTurret(Follower follower) {
         return infinite(() -> turret.update(follower));

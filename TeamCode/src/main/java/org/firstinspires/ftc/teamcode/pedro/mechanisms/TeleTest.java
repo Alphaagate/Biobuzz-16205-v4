@@ -49,9 +49,11 @@ public class TeleTest extends OpMode {
             rampUp = !rampUp;
 
             if (rampUp) {
-                robot.ramp.rampUp();    // Move servo to UP position
+                robot.gate.gateOpen();
+//                robot.ramp.rampUp();    // Move servo to UP position
             } else {
-                robot.ramp.rampDown();  // Move servo to DOWN position
+                robot.gate.gateClosed();
+//                robot.ramp.rampDown();  // Move servo to DOWN position
             }//rampup is command builder so the commands dont doanything in teleop
         }
         if (gamepad1.rightBumperWasPressed()) {
