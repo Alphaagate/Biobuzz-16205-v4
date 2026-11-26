@@ -32,6 +32,7 @@ public class Robot {
     public final Intake intake;
     public final Shooter shooter;
     public final Ramp ramp;
+    public final Gate gate;
     public final Hood hood;
     public final ServoTurret turret;
     public final MovingShotCalculator movingShot;
@@ -51,6 +52,7 @@ public class Robot {
         turret = new ServoTurret();
         turret.init(hardwareMap);   // ServoTurret uses init(), not a constructor
         ramp = new Ramp(hardwareMap);
+        gate = new Gate(hardwareMap);
         hood = new Hood(hardwareMap);
         movingShot = new MovingShotCalculator(shooter, turret, hood);
         follower = Constants.create(hardwareMap);
@@ -75,16 +77,19 @@ public class Robot {
         return sequential(
                 Commands.instant(shooter::on), // targets are updated continuously by MovingShotCalculator
                 race(shooter.waitReady(), waitMs(500)),
+                Commands.instant(gate::gateOpen),
                 intake.intake(),              // feed balls
                 waitMs(500),
-                intake.off()
+                intake.off(),
+                Commands.instant(gate::gateClosed)
 
-        );
+
+                );
     }
 
     public CommandBuilder shootOff() {
         return sequential(
-                Commands.instant(shooter::off) // targets are updated continuously by MovingShotCalculator 
+                Commands.instant(shooter::off) // targets are updated continuously by MovingShotCalculator
         );
     }
 

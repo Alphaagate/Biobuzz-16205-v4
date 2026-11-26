@@ -2,168 +2,113 @@ package org.firstinspires.ftc.teamcode.pedro.mechanisms;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.PwmControl;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.ServoControllerEx;
 
-public class ServoTurret {
+public class ServoTurret {   // name kept so Robot/MovingShotCalculator still compile
 
-    private Servo turretA, turretB;
+    private DcMotorEx turretMotor;
 
-    // ========================================================================
-    // FIELD CONFIGURATION
-    // ========================================================================
-
+    // FIELD
     public static double GOAL_X = 60.0;
-    public static double GOAL_Y = 60;
+    public static double GOAL_Y = 60.0;
 
-    // ========================================================================
-    // PHYSICAL CONFIGURATION
-    // ========================================================================
-
+    // PHYSICAL
     public static double TURRET_OFFSET_FROM_ROBOT_CENTER = 1.0;
 
-    public static final double SERVO_DEGREES = 355.0;
-    public static final double SERVO_MIN = 0.015;
-    public static final double SERVO_MAX = 0.95;
-    public static final double DEFAULT_POSITION = 0.5;
+    // MOTOR / GEARING  (CHANGE THESE FOR YOUR ROBOT)
+    public static double MOTOR_TICKS_PER_REV = 383.6;   // 435 RPM (13.7:1) Yellow Jacket
+    public static double GEAR_RATIO = 80.0 / 27.0;      // 2.9630
 
-    // Fine-tune alignment without touching the math (configurable via dashboard)
-    public static double SERVO_TRIM = 0.0;
-    public static double MANUAL_TRIM_STEP = 0.005;
+    // SOFT LIMITS (degrees, 0 = straight forward, + = counterclockwise)
+    public static double MIN_ANGLE_DEG = -170.0;
+    public static double MAX_ANGLE_DEG = 170.0;
 
-    // Angular offset applied before servo math — use buttons to nudge aim left/right
-    public static double HEADING_OFFSET = 0.0; // radians
-    public static double HEADING_OFFSET_STEP = Math.toRadians(2.0); // 2° per press
+    // TUNING
+    public static double MAX_POWER = 0.6;
+    public static double POSITION_P = 10.0;           // RUN_TO_POSITION P gain
+    public static int TOLERANCE_TICKS = 8;
+    public static double TRIM_DEG = 0.0;
+    public static double HEADING_OFFSET = 0.0;        // radians
+    public static double HEADING_OFFSET_STEP = Math.toRadians(2.0);
 
-    // ========================================================================
     // STATE
-    // ========================================================================
-
     private double distanceToGoal = 0;
-    private double targetServoPosition = DEFAULT_POSITION;
+    private int targetTicks = 0;
+    private double targetAngleDeg = 0;
     private Pose currentRobotPose = null;
 
-    // ========================================================================
-    // INITIALIZATION
-    // ========================================================================
-
     public void init(HardwareMap hwMap) {
-//        turretA = hwMap.get(Servo.class, "turretA");
-//        turretB = hwMap.get(Servo.class, "turretB");
-//
-//        turretA.setDirection(Servo.Direction.FORWARD);
-//        turretB.setDirection(Servo.Direction.FORWARD);
-//
-//        setExtendedPwmRange(turretA);
-//        setExtendedPwmRange(turretB);
+        turretMotor = hwMap.get(DcMotorEx.class, "turret");
+        turretMotor.setDirection(DcMotorEx.Direction.FORWARD); // flip if + ticks isn't CCW
+        turretMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        turretMotor.setTargetPosition(0);
+        turretMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        turretMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        turretMotor.setPositionPIDFCoefficients(POSITION_P);
+        turretMotor.setPower(MAX_POWER);
+        // IMPORTANT: turret must be physically centered (facing forward) at init.
     }
-
-    private void setExtendedPwmRange(Servo servo) {
-        if (servo.getController() instanceof ServoControllerEx) {
-            ServoControllerEx controller = (ServoControllerEx) servo.getController();
-            int port = servo.getPortNumber();
-            controller.setServoPwmRange(port, new PwmControl.PwmRange(500, 2500));
-        }
-    }
-
-    // ========================================================================
-    // MAIN UPDATE LOOP
-    // ========================================================================
 
     public void update(Follower follower) {
         aimAtFieldPoint(follower.pose(), GOAL_X, GOAL_Y);
     }
 
-    /**
-     * Aims at a stationary field point. MovingShotCalculator calls aimAtFieldAngle() instead
-     * so that the same servo calibration is used for velocity-compensated shots.
-     */
     public void aimAtFieldPoint(Pose robotPose, double goalX, double goalY) {
-        double turretX = getTurretX(robotPose);
-        double turretY = getTurretY(robotPose);
-
-        double deltaX = goalX - turretX;
-        double deltaY = goalY - turretY;
-
-        aimAtFieldAngle(robotPose, Math.atan2(deltaY, deltaX), Math.hypot(deltaX, deltaY));
+        double dx = goalX - getTurretX(robotPose);
+        double dy = goalY - getTurretY(robotPose);
+        aimAtFieldAngle(robotPose, Math.atan2(dy, dx), Math.hypot(dx, dy));
     }
 
-    /**
-     * Aims at an absolute, field-frame bearing. This is intentionally separate from the
-     * point-based helper so a moving shot can lead the target without changing servo math.
-     */
     public void aimAtFieldAngle(Pose robotPose, double fieldAngle, double distance) {
         currentRobotPose = robotPose;
         distanceToGoal = distance;
-        double relativeAngle = normalizeAngle(fieldAngle - robotPose.heading());
 
-        // Apply heading offset in angle space before converting to servo position
-        relativeAngle = normalizeAngle(relativeAngle + HEADING_OFFSET);
+        double relative = normalizeAngle(fieldAngle - robotPose.heading());
+        relative = normalizeAngle(relative + HEADING_OFFSET);
 
-        double servoRadiansTotal = Math.toRadians(SERVO_DEGREES);
+        double deg = Math.toDegrees(relative) + TRIM_DEG;
+        deg = Math.max(MIN_ANGLE_DEG, Math.min(MAX_ANGLE_DEG, deg)); // protect cables
 
-        double servoPosition = 0.5 + (-relativeAngle / servoRadiansTotal) + SERVO_TRIM;
+        targetAngleDeg = deg;
+        targetTicks = (int) Math.round(deg * ticksPerDegree());
 
-        servoPosition = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoPosition));
-
-        targetServoPosition = servoPosition;
-        setPosition(servoPosition);
+        turretMotor.setTargetPosition(targetTicks);
+        turretMotor.setPower(MAX_POWER);
     }
 
-    /** Returns the turret pivot's field X coordinate using the existing robot offset convention. */
-    public double getTurretX(Pose robotPose) {
-        return robotPose.x() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.cos(robotPose.heading());
+    public double getTurretX(Pose p) {
+        return p.x() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.cos(p.heading());
+    }
+    public double getTurretY(Pose p) {
+        return p.y() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.sin(p.heading());
     }
 
-    /** Returns the turret pivot's field Y coordinate using the existing robot offset convention. */
-    public double getTurretY(Pose robotPose) {
-        return robotPose.y() - TURRET_OFFSET_FROM_ROBOT_CENTER * Math.sin(robotPose.heading());
+    private double ticksPerDegree() {
+        return MOTOR_TICKS_PER_REV * GEAR_RATIO / 360.0;
     }
 
-    // ========================================================================
-    // CONTROL
-    // ========================================================================
+    public void stop() { turretMotor.setPower(0); }
 
-    public void setPosition(double position) {
-        position = Math.max(0.0, Math.min(1.0, position));
-//        turretA.setPosition(position - 0.01);
-//        turretB.setPosition(position - 0.01);
+    public boolean atTarget() {
+        return Math.abs(turretMotor.getCurrentPosition() - targetTicks) <= TOLERANCE_TICKS;
     }
 
-    public void adjustTrim(double delta) {
-        SERVO_TRIM += delta;
+    public void adjustTrim(double deltaDeg) { TRIM_DEG += deltaDeg; }
+    public void adjustHeadingOffset(double d) { HEADING_OFFSET += d; }
+    public void resetHeadingOffset() { HEADING_OFFSET = 0.0; }
+
+    private double normalizeAngle(double a) {
+        while (a > Math.PI) a -= 2 * Math.PI;
+        while (a < -Math.PI) a += 2 * Math.PI;
+        return a;
     }
 
-    public void adjustHeadingOffset(double delta) {
-        HEADING_OFFSET += delta;
-    }
-
-    public void resetHeadingOffset() {
-        HEADING_OFFSET = 0.0;
-    }
-
-    // ========================================================================
-    // HELPERS
-    // ========================================================================
-
-    private double normalizeAngle(double angle) {
-        while (angle > Math.PI) angle -= 2 * Math.PI;
-        while (angle < -Math.PI) angle += 2 * Math.PI;
-        return angle;
-    }
-
-    // ========================================================================
-    // GETTERS FOR TELEMETRY
-    // ========================================================================
-
-    public double getPosition()             { return targetServoPosition; }
-    public double getDistanceToGoal()       { return distanceToGoal; }
-    public double getTargetServoPosition()  { return targetServoPosition; }
-    public Pose   getCurrentRobotPose()     { return currentRobotPose; }
-
-    public double getTurretAngleDegrees() {
-        return (targetServoPosition - 0.5) * SERVO_DEGREES;
-    }
+    // Telemetry
+    public double getDistanceToGoal() { return distanceToGoal; }
+    public int getTargetTicks() { return targetTicks; }
+    public double getTargetAngleDegrees() { return targetAngleDeg; }
+    public double getTurretAngleDegrees() { return turretMotor.getCurrentPosition() / ticksPerDegree(); }
+    public Pose getCurrentRobotPose() { return currentRobotPose; }
 }

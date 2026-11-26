@@ -1,41 +1,41 @@
 package org.firstinspires.ftc.teamcode.pedro.mechanisms;
 
-
 import com.pedropathing.ivy.CommandBuilder;
 import com.pedropathing.ivy.commands.Commands;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-
 public class Gate {
+
     private Servo gate;
-    public static double DOWN = 0.52;
-    public static double UP = 0.3;
+    public static final double CLOSED = 1;
+    public static final double OPEN = 0;
 
     public Gate(HardwareMap hardwareMap) {
         gate = hardwareMap.get(Servo.class, "gate");
+    }   
+
+    public void gateClosed() {
+        gate.setPosition(CLOSED);
     }
 
-    public void flipDown() {
-        gate.setPosition(DOWN);
+    public void gateOpen() {
+        gate.setPosition(OPEN);
     }
 
-    public void flipUp() {
-        gate.setPosition(UP);
-    }
-
-    public CommandBuilder up() { return Commands.instant(this::flipUp); }
-    public CommandBuilder down() { return Commands.instant(this::flipDown); }
+    public CommandBuilder open() { return Commands.instant(this::gateOpen); }
+    public CommandBuilder closed() { return Commands.instant(this::gateClosed); }
 
     public void toggle() {
-        if (gate.getPosition() == UP)
-            flipDown();
+        if (gate.getPosition() == OPEN)
+            gateClosed();
         else
-            flipUp();
+            gateOpen();
     }
 
     public boolean isDown() {
-        return gate.getPosition() == DOWN;
+        return gate.getPosition() == CLOSED;
     }
 
 }
+

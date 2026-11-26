@@ -17,7 +17,7 @@ import org.firstinspires.ftc.teamcode.pedro.Robot;
 @Configurable
 public class OwenFlywheelTuner2 {
     private DcMotorEx outtake;
-    Robot robot;
+     Robot robot;
 
     public static double P = 0.005;
     public static double kV = 0.00041;

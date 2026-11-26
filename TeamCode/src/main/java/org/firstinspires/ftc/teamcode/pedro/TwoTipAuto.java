@@ -46,10 +46,10 @@ public class TwoTipAuto extends LinearOpMode {
     private final Pose pickupCornerPose = poseFactory.of(9, 9, 180);
     private final Pose shootCornerStartPose = poseFactory.of(9, 9, 180);
     private final Pose shootCornerPose = poseFactory.of(39, 9, 180);
-    private final Pose intakeFlowerPose = poseFactory.of(12, 48, 180);
+    private final Pose intakeFlowerPose = poseFactory.of(10, 48, 180);
     private final Pose intakeFlowerControl1Pose = poseFactory.of(40.1234, 52.3672, 0);
     private final Pose shootFarStartPose = poseFactory.of(12, 48, 180);
-    private final Pose shootFarPose = poseFactory.of(48, 129, 90);
+    private final Pose shootFarPose = poseFactory.of(48, 134, 90);
     private final Pose shootFarControl1Pose = poseFactory.of(31.5437, 51.0714, 0);
     private final Pose shootFarControl2Pose = poseFactory.of(6.6204, 111.3712, 0);
     private final Pose shootFarControl3Pose = poseFactory.of(50.3263, 95.8882, 0);
@@ -99,7 +99,7 @@ public class TwoTipAuto extends LinearOpMode {
 
         pickupCorner = line(startPose, pickupCornerPose).constant(pickupCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.2));
 
-        shootCorner = line(shootCornerStartPose, shootCornerPose).linear(shootCornerStartPose, shootCornerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.2));
+        shootCorner = line(shootCornerStartPose, shootCornerPose).linear(shootCornerStartPose, shootCornerPose);
 
         intakeFlower = Paths.curve(shootCornerPose, intakeFlowerControl1Pose, intakeFlowerPose).constant(intakeFlowerPose).with(Constants.foresightConfig.maxPathSpeed.at(0.5));
 
@@ -205,7 +205,6 @@ public class TwoTipAuto extends LinearOpMode {
 
         schedule(auto);
         while (opModeIsActive()) {
-
             robot.follower.update();
 
             if (robot.follower.pose().y() >= 70.0) {
